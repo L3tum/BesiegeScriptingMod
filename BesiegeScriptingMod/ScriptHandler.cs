@@ -27,10 +27,51 @@ namespace BesiegeScriptingMod
                 DirectoryInfo DI = new DirectoryInfo(Application.dataPath + "/Mods/Scripts");
                 if (Directory.Exists(Application.dataPath + "/Mods/Scripts/PythonScripts"))
                 {
-                    DirectoryInfo DI = new DirectoryInfo(Application.dataPath + "/Mods/Scripts/");
                     foreach (FileInfo info in DI.GetDirectories().First(info => info.Name.Equals("PythonScripts")).GetFiles())
                     {
-                        
+                        PythonScripts.Add(info.Name, info);
+                    }
+                }
+                if (Directory.Exists(Application.dataPath + "/Mods/Scripts/LuaScripts"))
+                {
+                    foreach (FileInfo fileInfo in DI.GetDirectories().First(info => info.Name.Equals("LuaScripts")).GetFiles())
+                    {
+                        LuaScripts.Add(fileInfo.Name, fileInfo);
+                    }
+                }
+                if (Directory.Exists(Application.dataPath + "/Mods/Scripts/BrainfuckScripts"))
+                {
+                    foreach (FileInfo fileInfo in DI.GetDirectories().First(info => info.Name.Equals("BrainfuckScripts")).GetFiles())
+                    {
+                        BrainfuckScripts.Add(fileInfo.Name, fileInfo);
+                    }
+                }
+                if (Directory.Exists(Application.dataPath + "/Mods/Scripts/CSharpScripts"))
+                {
+                    foreach (FileInfo fileInfo in DI.GetDirectories().First(info => info.Name.Equals("CSharpScripts")).GetFiles())
+                    {
+                        CSharpScripts.Add(fileInfo.Name, fileInfo);
+                    }
+                }
+                if (Directory.Exists(Application.dataPath + "/Mods/Scripts/ChefScripts"))
+                {
+                    foreach (FileInfo fileInfo in DI.GetDirectories().First(info => info.Name.Equals("ChefScripts")).GetFiles())
+                    {
+                        ChefScripts.Add(fileInfo.Name, fileInfo);
+                    }
+                }
+                if (Directory.Exists(Application.dataPath + "/Mods/Scripts/JavaScriptScripts"))
+                {
+                    foreach (FileInfo fileInfo in DI.GetDirectories().First(info => info.Name.Equals("JavaScriptScripts")).GetFiles())
+                    {
+                        JavaScriptScripts.Add(fileInfo.Name, fileInfo);
+                    }
+                }
+                if (Directory.Exists(Application.dataPath + "/Mods/Scripts/JavaScripts"))
+                {
+                    foreach (FileInfo fileInfo in DI.GetDirectories().First(info => info.Name.Equals("BrainfuckScripts")).GetFiles())
+                    {
+                        BrainfuckScripts.Add(fileInfo.Name, fileInfo);
                     }
                 }
             }
