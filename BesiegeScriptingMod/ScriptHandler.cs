@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 
 namespace BesiegeScriptingMod
@@ -23,9 +24,11 @@ namespace BesiegeScriptingMod
             }
             else
             {
+                DirectoryInfo DI = new DirectoryInfo(Application.dataPath + "/Mods/Scripts");
                 if (Directory.Exists(Application.dataPath + "/Mods/Scripts/PythonScripts"))
                 {
-                    foreach (string file in Directory.get(Application.dataPath + "/Mods/Scripts/PythonScripts"))
+                    DirectoryInfo DI = new DirectoryInfo(Application.dataPath + "/Mods/Scripts/");
+                    foreach (FileInfo info in DI.GetDirectories().First(info => info.Name.Equals("PythonScripts")).GetFiles())
                     {
                         
                     }
