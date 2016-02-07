@@ -1,0 +1,17 @@
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\bin\Release\BesiegeScriptingMod.dll
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\bin\Release\BesiegeScriptingMod.pdb
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\bin\Release\Assembly-CSharp.dll
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\bin\Release\Assembly-UnityScript.dll
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\bin\Release\SpaarModLoader.dll
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\bin\Release\UnityEngine.dll
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\bin\Release\DynamicText.dll
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\bin\Release\Assembly-CSharp-firstpass.dll
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\bin\Release\UnityEngine.UI.dll
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\bin\Release\Boo.Lang.dll
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\bin\Release\Assembly-UnityScript-firstpass.dll
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\bin\Release\UnityScript.Lang.dll
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\bin\Release\SpaarModLoader.pdb
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\bin\Release\UnityEngine.xml
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\obj\Release\BesiegeScriptingMod.csprojResolveAssemblyReference.cache
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\obj\Release\BesiegeScriptingMod.dll
+c:\users\tom\documents\visual studio 2015\Projects\BesiegeScriptingMod\BesiegeScriptingMod\obj\Release\BesiegeScriptingMod.pdb
