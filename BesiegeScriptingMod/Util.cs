@@ -1,43 +1,34 @@
 ﻿using System;
 using System.CodeDom.Compiler;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.CSharp;
+using Microsoft.Scripting;
 using UnityEngine;
 
 namespace BesiegeScriptingMod
 {
     public static class Util
     {
-        public static Assembly Compile(String[] sauces, String[] references, String name)
+        public static FileInfo Compile(String sauce, String refs, String name)
         {
-            CSharpCodeProvider provider = new CSharpCodeProvider();
-            CompilerParameters parameters = new CompilerParameters();
+            CompilerParameters cp = new CompilerParameters();
+            cp.GenerateExecutable = false;
+            cp.GenerateInMemory = false;
+            cp.TreatWarningsAsErrors = false;
+            cp.CompilerOptions = " /out:" + Application.dataPath + "/Mods/Scripts/TempScripts/" + name + ".dll";
 
-            foreach (string reference in references)
-            {
-                parameters.ReferencedAssemblies.Add(reference);
-            }
-            parameters.GenerateInMemory = false;
-            parameters.GenerateExecutable = false;
-            parameters.CompilerOptions = " /out:" + Application.dataPath + "/Mods/ScriptModDlls/" + name;
-
-            CompilerResults results = provider.CompileAssemblyFromSource(parameters, sauces);
-
-            if (results.Errors.HasErrors)
-            {
-                StringBuilder sb = new StringBuilder();
-
-                foreach (CompilerError error in results.Errors)
-                {
-                    sb.AppendLine(String.Format("Error ({0}): {1}", error.ErrorNumber, error.ErrorText));
-                }
-
-                UnityEngine.Debug.Log(sb.ToString());
-                return null;
-            }
-            return results.CompiledAssembly;
+            Process compiler = new Process();
+            ProcessStartInfo info = new ProcessStartInfo(Application.dataPath + "/Mods/Scripts/Resource/csws.exe",
+                "/cd /co:" + cp.CompilerOptions + "/dir:" + Application.dataPath + "/Managed:" +
+                Application.dataPath + "/Mods /r:" + refs + sauce);
+            compiler.StartInfo = info;
+            compiler.Start();
+            return new FileInfo(Application.dataPath + "/Mods/Scripts/TempScripts/" + name + ".dll");
         }
 
 
