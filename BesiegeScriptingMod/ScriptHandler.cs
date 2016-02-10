@@ -41,7 +41,8 @@ namespace BesiegeScriptingMod
             refs += ("SpaarModLoader.dll:");
             refs += ("Assembly-UnityScript.dll:");
             refs += ("Assembly-CSharp.dll:");
-            refs += ("System.dll");
+            refs += ("System.dll:");
+            refs += "UnityEngine.dll";
             foreach (string @ref in refs.Split(':'))
             {
                 tempRefs += @ref + "\n";
@@ -53,7 +54,7 @@ namespace BesiegeScriptingMod
             }
             else
             {
-                Directory.CreateDirectory(Application.dataPath + "/Mods/Scripts/TempScript");
+                Directory.CreateDirectory(Application.dataPath + "/Mods/Scripts/TempScripts");
                 DirectoryInfo DI = new DirectoryInfo(Application.dataPath + "/Mods/Scripts");
                 if (Directory.Exists(Application.dataPath + "/Mods/Scripts/PythonScripts"))
                 {
@@ -218,23 +219,32 @@ namespace BesiegeScriptingMod
                             addingRefs = true;
                             break;
                         }
-                        else
+                        if (name.Equals(""))
                         {
-                            addingRefs = false;
-                            isEdit = true;
-                            refs = tempRefs.Replace("\n", ":");
-                            FileInfo assInfo = Util.Compile(sauce, refs, name);
-                            CSharpScripts.Add(name, assInfo);
-                            Assembly ass = Assembly.LoadFrom(assInfo.FullName);
-                            foreach (Type exportedType in ass.GetExportedTypes())
-                            {
-                                if (!exportedType.IsGenericType)
-                                {
-                                    AddedScripts.Add(gameObject.AddComponent(exportedType));
-                                }
-                            }
                             break;
                         }
+
+                            if (File.Exists(Application.dataPath + "/Mods/Scripts/TempScripts/" + name + ".dll"))
+                            {
+                                File.Delete(Application.dataPath + "/Mods/Scripts/TempScripts/" + name + ".dll");
+                            }
+                            refs = tempRefs.Replace("\n", ":");
+                        FileStream fs = File.Create(Application.dataPath + "/Mods/Scripts/TempScripts/" + name + ".cs");
+
+                        FileInfo assInfo = Util.Compile(new FileInfo(fs.Name), refs, name);
+                        addingRefs = false;
+                        isEdit = true;
+                        CSharpScripts.Add(name, assInfo);
+                        Assembly ass = Assembly.LoadFrom(assInfo.FullName);
+                        foreach (Type exportedType in ass.GetExportedTypes())
+                        {
+                            if (!exportedType.IsGenericType)
+                            {
+                                AddedScripts.Add(gameObject.AddComponent(exportedType));
+                                break;
+                            }
+                        }
+                        break;
                     }
                 }
             }

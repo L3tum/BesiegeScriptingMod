@@ -14,7 +14,7 @@ namespace BesiegeScriptingMod
 {
     public static class Util
     {
-        public static FileInfo Compile(String sauce, String refs, String name)
+        public static FileInfo Compile(FileInfo sauce, String refs, String name)
         {
             CompilerParameters cp = new CompilerParameters();
             cp.GenerateExecutable = false;
@@ -24,8 +24,8 @@ namespace BesiegeScriptingMod
 
             Process compiler = new Process();
             ProcessStartInfo info = new ProcessStartInfo(Application.dataPath + "/Mods/Scripts/Resource/csws.exe",
-                "/cd /co:" + cp.CompilerOptions + "/dir:" + Application.dataPath + "/Managed:" +
-                Application.dataPath + "/Mods /r:" + refs + sauce);
+                "/cd /co:" + (cp.CompilerOptions.Trim()) + " /r:" + (refs.Trim(':')) + " " + sauce);
+            UnityEngine.Debug.Log(info.Arguments);
             compiler.StartInfo = info;
             compiler.Start();
             return new FileInfo(Application.dataPath + "/Mods/Scripts/TempScripts/" + name + ".dll");
