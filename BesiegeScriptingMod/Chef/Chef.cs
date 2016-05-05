@@ -7,12 +7,6 @@ namespace BesiegeScriptingMod.Chef
 {
     public class Chef
     {
-        public static void main(String[] args)
-        {
-            Chef interpreter = new Chef(args[0]);
-            interpreter.bake();
-        }
-
         FileStream file;
         TextReader scan;
         Dictionary<String, Recipe> recipes;
@@ -95,6 +89,8 @@ namespace BesiegeScriptingMod.Chef
             }
             if (mainrecipe == null)
                 throw new ChefException(global::BesiegeScriptingMod.Chef.ChefException.STRUCTURAL, "Recipe empty or title missing!");
+
+            bake();
             //System.out.println("Done!");
         }
 

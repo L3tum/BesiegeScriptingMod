@@ -112,15 +112,15 @@ namespace NLua
         local load_assembly = luanet.load_assembly
         luanet.error, luanet.type = error, type
         -- Lookup a .NET identifier component.
-        function metatable:__index(key) -- key is e.g. 'Form'
+        function metatable:__index(Key) -- Key is e.g. 'Form'
             -- Get the fully-qualified name, e.g. 'System.Windows.Forms.Form'
             local fqn = rawget(self,'.fqn')
-            fqn = ((fqn and fqn .. '.') or '') .. key
+            fqn = ((fqn and fqn .. '.') or '') .. Key
 
             -- Try to find either a luanet function or a CLR type
-            local obj = rawget(luanet,key) or import_type(fqn)
+            local obj = rawget(luanet,Key) or import_type(fqn)
 
-            -- If key is neither a luanet function or a CLR type, then it is simply
+            -- If Key is neither a luanet function or a CLR type, then it is simply
             -- an identifier component.
             if obj == nil then
                 -- It might be an assembly, so we load it too.
@@ -130,7 +130,7 @@ namespace NLua
             end
 
             -- Cache this lookup
-            rawset(self, key, obj)
+            rawset(self, Key, obj)
             return obj
         end
 

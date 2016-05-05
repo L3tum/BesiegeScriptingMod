@@ -5,16 +5,30 @@ VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BesiegeScriptingMod", "BesiegeScriptingMod\BesiegeScriptingMod.csproj", "{B0EADD9B-8641-4A25-9477-6B2E0E706804}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BesiegeScriptingLoadingMod", "BesiegeScriptingLoadingMod\BesiegeScriptingLoadingMod.csproj", "{FC1CE83B-0642-499E-970E-8D2BD2BDF426}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B0EADD9B-8641-4A25-9477-6B2E0E706804} = {B0EADD9B-8641-4A25-9477-6B2E0E706804}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug - AST|Any CPU = Debug - AST|Any CPU
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B0EADD9B-8641-4A25-9477-6B2E0E706804}.Debug - AST|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0EADD9B-8641-4A25-9477-6B2E0E706804}.Debug - AST|Any CPU.Build.0 = Debug|Any CPU
 		{B0EADD9B-8641-4A25-9477-6B2E0E706804}.Debug|Any CPU.ActiveCfg = Release|Any CPU
 		{B0EADD9B-8641-4A25-9477-6B2E0E706804}.Debug|Any CPU.Build.0 = Release|Any CPU
 		{B0EADD9B-8641-4A25-9477-6B2E0E706804}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B0EADD9B-8641-4A25-9477-6B2E0E706804}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC1CE83B-0642-499E-970E-8D2BD2BDF426}.Debug - AST|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC1CE83B-0642-499E-970E-8D2BD2BDF426}.Debug - AST|Any CPU.Build.0 = Debug|Any CPU
+		{FC1CE83B-0642-499E-970E-8D2BD2BDF426}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC1CE83B-0642-499E-970E-8D2BD2BDF426}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC1CE83B-0642-499E-970E-8D2BD2BDF426}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC1CE83B-0642-499E-970E-8D2BD2BDF426}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,47 +1,288 @@
 ﻿using System;
-using System.CodeDom.Compiler;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
-using Microsoft.CSharp;
-using Microsoft.Scripting;
+using Community.CsharpSqlite;
 using UnityEngine;
+using ICSharpCode.NRefactory;
+using ICSharpCode.NRefactory.PrettyPrinter;
+using ICSharpCode.NRefactory.Visitors;
+using ICSharpCode.PythonBinding;
 
 namespace BesiegeScriptingMod
 {
     public static class Util
     {
-        public static FileInfo Compile(FileInfo sauce, String refs, String name)
+        /// <summary>
+        /// Converts the C# Source into Python
+        /// </summary>
+        /// <param name="sauce">Source code written by $user</param>
+        /// <param name="refs">References specified by $user</param>
+        /// <param name="name">$name of the script</param>
+        /// <returns>Source code in Python format</returns>
+        public static String Compile(FileInfo sauce, string[] refs, string name)
         {
-            CompilerParameters cp = new CompilerParameters();
-            cp.GenerateExecutable = false;
-            cp.GenerateInMemory = false;
-            cp.TreatWarningsAsErrors = false;
-            cp.CompilerOptions = " /out:" + Application.dataPath + "/Mods/Scripts/TempScripts/" + name + ".dll";
+            NRefactoryToPythonConverter indentString = NRefactoryToPythonConverter.Create(sauce.FullName);
+            indentString.IndentString = new string(' ', 2);
+            string str = "";
+            using (var tr = sauce.OpenText())
+            {
+                str = indentString.Convert(tr.ReadToEnd());
+            }
+            FileInfo fi = new FileInfo(Application.dataPath + "/Mods/Scripts/CSharpScripts/" + name + ".temp.py");
+            using (TextWriter tw = fi.CreateText())
+            {
+                tw.Write(str);
+            }
+            return Application.dataPath + "/Mods/Scripts/CSharpScripts/" + name + ".temp.py";
 
-            Process compiler = new Process();
-            ProcessStartInfo info = new ProcessStartInfo(Application.dataPath + "/Mods/Scripts/Resource/csws.exe",
-                "/cd /co:" + (cp.CompilerOptions.Trim()) + " /r:" + (refs.Trim(':')) + " " + sauce);
-            UnityEngine.Debug.Log(info.Arguments);
-            compiler.StartInfo = info;
-            compiler.Start();
-            return new FileInfo(Application.dataPath + "/Mods/Scripts/TempScripts/" + name + ".dll");
+            #region alternative[OBSOLETE]
+
+            /*
+            String refss = "";
+            foreach (var @ref in refs)
+            {
+                refss += ":\"" + @ref + "\"";
+            }
+
+            String args = Application.dataPath + "/Mods/Scripts/Resource/cs-script/cscs.exe /cd /r" + refss + sauce.FullName;
+            if (Application.platform.Equals(RuntimePlatform.WindowsPlayer) ||
+                Application.platform.Equals(RuntimePlatform.WindowsEditor))
+            {
+                var process = new Process();
+                var startInfo = new ProcessStartInfo
+                {
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    FileName = "cmd.exe",
+                    Arguments = args
+                };
+                process.StartInfo = startInfo;
+                process.Start();
+                process.WaitForExit();
+            }
+            else if (Application.platform.Equals(RuntimePlatform.LinuxPlayer) ||
+                     Application.platform.Equals(RuntimePlatform.OSXEditor) ||
+                     Application.platform.Equals(RuntimePlatform.OSXPlayer))
+            {
+                var psi = new ProcessStartInfo
+                {
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    FileName = "/bin/bash.sh",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    Arguments = args
+                };
+
+                var p = Process.Start(psi);
+                p.WaitForExit();
+            }
+            */
+
+            #endregion
         }
 
+        /// <summary>
+        /// Wraps methods written by $user in a class with the specified $name
+        /// </summary>
+        /// <param name="sauce">The source code written by $user</param>
+        /// <param name="name">The name of the script and class specified by $user</param>
+        /// <param name="refs">The References for this Script</param>
+        /// <returns>Source Code wrapped into a class</returns>
+        public static String getMethodsWithClass(String sauce, String name, String[] refs)
+        {
+            String finalSauce = "";
+            String usings = "";
+            String[] lines = splitStringAtNewline(sauce);
+            Dictionary<String, IEnumerable<String>> nss = new Dictionary<string, IEnumerable<String>>();
+            foreach (string @ref in refs)
+            {
+                String reff = @ref.Trim();
+                Assembly assembly = Assembly.LoadFrom(@ref);
+                var namespaces = assembly.GetTypes()
+                        .Select(t => t.Namespace)
+                        .Distinct();
+                nss.Add(@ref, namespaces);
+            }
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (lines[i].Contains("using"))
+                {
+                    if (lines[i].EndsWith(";"))
+                    {
+                        usings += lines[i] + getNewLine();
+                        lines[i] = String.Empty;
+                    }
+                }
+                if (lines[i].Contains("using") || String.IsNullOrEmpty(lines[i])) continue;
+                foreach (string ns in from key in nss.Keys from ns in nss[key] where !String.IsNullOrEmpty(ns) where lines[i].Contains((ns + ".")) select ns)
+                {
+                    lines[i] = Regex.Replace(lines[i], ns + ".", string.Empty);
+                }
+                lines[i] = lines[i] + getNewLine();
+            }
+            lines = lines.Where(x => !string.IsNullOrEmpty(x) && !x.Equals("\r\n") && !x.Equals("\r") && !x.Equals("\n") && !String.IsNullOrEmpty(x.Trim())).ToArray();
+            sauce = String.Concat(lines);
+            finalSauce += usings;
+            finalSauce += @"public class " + name + " : MonoBehaviour{" + getNewLine() + sauce + getNewLine() + "}";
+            return finalSauce;
+        }
 
+        /// <summary>
+        /// Wraps methods written by $user in a clas with the specified $name
+        /// Special Case for Python Source Code
+        /// </summary>
+        /// <param name="sauce">The source code written by $use</param>
+        /// <param name="name">The name of the script and class specified by $user</param>
+        /// <param name="refs">The References for this Script</param>
+        /// <returns>Source Code wrapped into a class</returns>
+        public static String getMethodsWithClassPython(String sauce, String name, String[] refs)
+        {
+            String finalSauce = "";
+            String imports = "";
+            String[] lines = splitStringAtNewline(sauce);
 
+            Dictionary<String, IEnumerable<String>> nss = new Dictionary<string, IEnumerable<String>>();
+            foreach (string @ref in refs)
+            {
+                String reff = @ref.Trim();
+                Assembly assembly = Assembly.LoadFrom(@ref);
+                var namespaces = assembly.GetTypes()
+                        .Select(t => t.Namespace)
+                        .Distinct();
+                nss.Add(@ref, namespaces);
+            }
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (lines[i].Contains("import"))
+                {
+                    if (!lines[i].Contains(";") && !lines[i].Contains(":"))
+                    {
+                        imports += lines[i] + getNewLine();
+                        lines[i] = String.Empty;
+                    }
+                    else
+                    {
+                        UnityEngine.Debug.LogError(
+                            "Please make sure to write each import and the source code on separate lines!");
+                    }
+                }
+                else
+                {
+                    lines[i] = @"  " + lines[i] + getNewLine();
+                }
+                if (lines[i].Contains("import") || String.IsNullOrEmpty(lines[i])) continue;
+                foreach (string ns in from key in nss.Keys from ns in nss[key] where !String.IsNullOrEmpty(ns) where lines[i].Contains((ns + ".")) select ns)
+                {
+                    lines[i] = Regex.Replace(lines[i], ns + ".", string.Empty);
+                }
+            }
+            lines = lines.Where(x => !string.IsNullOrEmpty(x) && !x.Equals("\r\n") && !x.Equals("\r") && !x.Equals("\n") && !String.IsNullOrEmpty(x.Trim())).ToArray();
+            sauce = String.Concat(lines);
+            finalSauce += imports;
+            finalSauce += @"class " + name + "(MonoBehaviour):" + getNewLine() + sauce;
+            return finalSauce;
+        }
+
+        /// <summary>
+        /// Splits the String at the new line parameters for each OS
+        /// </summary>
+        /// <param name="sauce">Source String to split</param>
+        /// <returns>String array of splitted source</returns>
+        public static String[] splitStringAtNewline(String sauce)
+        {
+            return sauce.Split(new[] {"\r\n", "\r", "\n"}, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        /// <summary>
+        /// Splits the String at new line and space chararacters for each OS
+        /// </summary>
+        /// <param name="sauce">Source String to split</param>
+        /// <returns>String array of splitted source</returns>
+        public static String[] splitStringAtNewlineAndSpace(String sauce)
+        {
+            return sauce.Split(new[] { " ", "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        /// <summary>
+        /// Gives a new line for the specific OS
+        /// </summary>
+        /// <returns>New Line Character for OS</returns>
+        public static String getNewLine()
+        {
+            if (Application.platform.Equals(RuntimePlatform.WindowsEditor) ||
+                Application.platform.Equals(RuntimePlatform.WindowsPlayer))
+            {
+                return "\r\n";
+            }
+            else if (Application.platform.Equals(RuntimePlatform.OSXPlayer) ||
+                     Application.platform.Equals(RuntimePlatform.OSXDashboardPlayer) ||
+                     Application.platform.Equals(RuntimePlatform.OSXEditor) || Application.platform.Equals(RuntimePlatform.LinuxPlayer))
+            {
+                return "\n";
+            }
+            return "\r";
+        }
+
+        #region Java[OBSOLETE]
+        /*
+        public static void compileJava(String name, String fileName, String[] javaRefs)
+        {
+
+            if (Application.platform.Equals(RuntimePlatform.WindowsPlayer) ||
+                Application.platform.Equals(RuntimePlatform.WindowsEditor))
+            {
+                var process = new Process();
+                var startInfo = new ProcessStartInfo
+                {
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    FileName = "cmd.exe",
+                    Arguments = "jar cf " + Application.dataPath + "/Mods/Scripts/TempScripts/" +
+                                name + ".jar " + fileName + " " + string.Concat(javaRefs)
+                };
+                process.StartInfo = startInfo;
+                process.Start();
+                process.WaitForExit();
+            }
+            else if (Application.platform.Equals(RuntimePlatform.LinuxPlayer) ||
+                     Application.platform.Equals(RuntimePlatform.OSXEditor) ||
+                     Application.platform.Equals(RuntimePlatform.OSXPlayer))
+            {
+                var psi = new ProcessStartInfo
+                {
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    FileName = "/bin/bash.sh",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    Arguments = "jar cf " + Application.dataPath + "/Mods/Scripts/TempScripts/" +
+                                name + ".jar " + fileName + " " + string.Concat(javaRefs)
+                };
+
+                var p = Process.Start(psi);
+                p.WaitForExit();
+            }
+        }
+        */
+        #endregion 
+
+        /// <summary>
+        /// Converts Unity-Script source into C# source
+        /// </summary>
+        /// <param name="output">Source code in US</param>
+        /// <param name="className">Name of the script</param>
+        /// <returns>Source code in C# format</returns>
         public static string ConvertJSToC(string output, string className)
         {
-            string VAR = @"[A-Za-z0-9_\[\]\.]";
-            string VAR_NONARRAY = @"[A-Za-z0-9_]";
+            var VAR = @"[A-Za-z0-9_\[\]\.]";
+            var VAR_NONARRAY = @"[A-Za-z0-9_]";
 
-            string[] patterns = new string[32];
-            string[] replacements = new string[32];
-            int patrs = 0;
-            int reps = 0;
+            var patterns = new string[32];
+            var replacements = new string[32];
+            var patrs = 0;
+            var reps = 0;
 
             //var AAA;
             patterns[patrs++] = @"var(\s+)(" + VAR_NONARRAY + @"+)(\s*);";
@@ -57,7 +298,8 @@ namespace BesiegeScriptingMod
             patterns[patrs++] = @"FIXME_VAR_TYPE(\s+)(" + VAR_NONARRAY + @"+)(\s*)=(\s*)""";
             replacements[reps++] = "string $2 = \"";
             //Try to fix the "FIXME_VAR_TYPE" for floats;
-            patterns[patrs++] = @"FIXME_VAR_TYPE(\s+)(" + VAR_NONARRAY + @"+)(\s*)=(\s*)(([0-9\-]*\.+[0-9]+[f]?)+)(\s*);";
+            patterns[patrs++] = @"FIXME_VAR_TYPE(\s+)(" + VAR_NONARRAY +
+                                @"+)(\s*)=(\s*)(([0-9\-]*\.+[0-9]+[f]?)+)(\s*);";
             replacements[reps++] = "float $2 = $5;";
             //Try to fix the "FIXME_VAR_TYPE" for int;
             patterns[patrs++] = @"FIXME_VAR_TYPE(\s+)(" + VAR_NONARRAY + @"+)(\s*)=(\s*)([0-9\-]+)(\s*);";
@@ -121,7 +363,8 @@ namespace BesiegeScriptingMod
             replacements[reps++] = "foreach($1 in $2)";
 
             //function rewrite
-            patterns[patrs++] = @"function(\s+)(\w+)(\s*)\(([\n\r\tA-Za-z0-9_\[\]\*\/ \.:\,]*)\)(\s*):(\s*)(" + VAR + @"+)(\s*)\{";
+            patterns[patrs++] = @"function(\s+)(\w+)(\s*)\(([\n\r\tA-Za-z0-9_\[\]\*\/ \.:\,]*)\)(\s*):(\s*)(" + VAR +
+                                @"+)(\s*)\{";
             replacements[reps++] = "$7 $2 ($4){";
             //function rewrite
             patterns[patrs++] = @"function(\s+)(\w+)(\s*)\(([\n\r\tA-Za-z0-9_\[\]\*\/ \.:\,]*)\)(\s*)\{";
@@ -143,23 +386,27 @@ namespace BesiegeScriptingMod
 
             output = PregReplace(output, patterns, replacements);
 
-            string before = "";
+            var before = "";
             while (before != output)
             {
                 //( XX : YY) rewrite
                 before = output;
-                string patt = @"\(([\t\n\rA-Za-z0-9_*\/ \.\,\]\[]*)\b(\w+)\b(\s*):(\s*)(" + VAR + @"+)([\s\,]*)([\[\]\n\r\t\sA-Za-z0-9_\*\/ :\,\.]*)\)";
-                string repp = "(${1} ${5} ${2} ${6} ${7})";//'(${1} 5--${5}-- 2--${2}-- 5--${6}-- 7=--${7})'
+                var patt = @"\(([\t\n\rA-Za-z0-9_*\/ \.\,\]\[]*)\b(\w+)\b(\s*):(\s*)(" + VAR +
+                           @"+)([\s\,]*)([\[\]\n\r\t\sA-Za-z0-9_\*\/ :\,\.]*)\)";
+                var repp = "(${1} ${5} ${2} ${6} ${7})"; //'(${1} 5--${5}-- 2--${2}-- 5--${6}-- 7=--${7})'
                 output = Regex.Replace(output, patt, repp);
             }
-
-
-            output = "using UnityEngine;\nusing System.Collections;\nusing System;\nusing spaar;\nusing System.Collections.Generic;\n\npublic class " + className + " : MonoBehaviour {\n" + output + "\n}";
             return output;
         }
 
-
-        static string PregReplace(string input, string[] pattern, string[] replacements)
+        /// <summary>
+        /// Helper-Method for $ConvertJSToC
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="pattern"></param>
+        /// <param name="replacements"></param>
+        /// <returns></returns>
+        private static string PregReplace(string input, string[] pattern, string[] replacements)
         {
             if (replacements.Length != pattern.Length)
                 throw new ArgumentException("Replacement and Pattern Arrays must be balanced");

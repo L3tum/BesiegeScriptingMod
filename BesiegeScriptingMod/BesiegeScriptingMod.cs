@@ -1,29 +1,25 @@
 ﻿using System;
+using System.Collections.Generic;
 using spaar.ModLoader;
 using UnityEngine;
 
 namespace BesiegeScriptingMod
 {
-    public class BesiegeScriptingMod : Mod
+    public class BesiegeScriptingMod
     {
         GameObject myGO;
-        public override void OnLoad()
+        public void OnLoad(Key activator, Key selector)
         {
             myGO = new GameObject("MortimersScriptingMod");
-            myGO.AddComponent<ScriptHandler>();
+            ScriptHandler sh = (ScriptHandler)myGO.AddComponent<ScriptHandler>();
+            sh.SetKeys(activator, selector);
             myGO.AddComponent<DontDestroyOnLoady>();
         }
 
-        public override void OnUnload()
+        public void OnUnload()
         {
             myGO.GetComponent<ScriptHandler>().OnUnload();
             MonoBehaviour.Destroy(myGO);
         }
-
-        public override string Name => "BesiegeScriptingMod";
-        public override string DisplayName => "Besiege Scripting Mod";
-        public override string Author => "JadedMortimer aka. Letum";
-        public override Version Version => new Version(0, 1, 1);
-        public override bool CanBeUnloaded => true;
     }
 }

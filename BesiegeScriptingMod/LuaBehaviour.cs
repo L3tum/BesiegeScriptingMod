@@ -18,7 +18,6 @@ namespace BesiegeScriptingMod
         {
             env = new Lua();
             env.LoadCLRPackage();
-
             env["this"] = this; // Give the script access to the gameobject.
             env["transform"] = transform;
             env["gameObject"] = gameObject;
@@ -32,6 +31,11 @@ namespace BesiegeScriptingMod
             {
                 Debug.LogError(FormatException(e), context: gameObject);
             }
+            Call("Awake");
+        }
+
+        void Awake()
+        {
             Call("Awake");
         }
 
@@ -58,6 +62,16 @@ namespace BesiegeScriptingMod
         void LateUpdate()
         {
             Call("LateUpdate");
+        }
+
+        void OnLevelWasLoaded(int level)
+        {
+            Call("OnLevelWasLoaded", level);
+        }
+
+        public void OnDestroy()
+        {
+            Call("OnDestroy");
         }
 
         public System.Object[] Call(string function, params System.Object[] args)

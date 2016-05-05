@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace BesiegeScriptingMod
 {
-    class BrainfuckBehaviour : MonoBehaviour
+    class OokAndBrainfuckBehaviour : MonoBehaviour
     {
         // Instance info.
         // Instance of Brainfuck interpreter, actually handles interpreting.
@@ -15,8 +14,11 @@ namespace BesiegeScriptingMod
         /** The memory pointer */
         private int mp;
 
-        /** The string containing the comands to be executed */
+        /** The string containing the commands to be executed */
         private char[] com;
+
+        /** The Strings containing the commands to be executed */
+        private String[] ookCom;
 
         /** The instruction pointer */
         private int ip = 0;
@@ -32,12 +34,22 @@ namespace BesiegeScriptingMod
             * @param s The string to be interpreted.
             */
 
-        public BrainfuckBehaviour(string code)
+        public OokAndBrainfuckBehaviour(string code, bool bf)
         {
-            mem = new char[30000];
-            mp = 0;
-            com = code.ToCharArray();
-            EOF = com.Length;
+            if (bf)
+            {
+                mem = new char[30000];
+                mp = 0;
+                com = code.ToCharArray();
+                EOF = com.Length;
+            }
+            else
+            {
+                mem = new char[30000];
+                mp = 0;
+                ookCom = Util.splitStringAtNewlineAndSpace(code);
+                EOF = ookCom.Length;
+            }
         }
 
         public IEnumerator<char> GetAsciiOfKeyDown()
@@ -58,7 +70,7 @@ namespace BesiegeScriptingMod
             * Run the interpreter with its given string
             */
 
-        public void run()
+        public void runBF()
         {
             while (ip < EOF)
             {
@@ -95,7 +107,7 @@ namespace BesiegeScriptingMod
                         }
                         catch (Exception e)
                         {
-                            Debug.Log(e.StackTrace);
+                            Debug.LogException(e);
                         }
                         break;
                     case '[':
@@ -115,6 +127,66 @@ namespace BesiegeScriptingMod
 
                 // increment instruction mp
                 ip++;
+            }
+        }
+
+        public void runOok()
+        {
+            while (ip < EOF)
+            {
+                // Get the current command
+                String c = ookCom[ip] + ookCom[ip + 1];
+
+                // Act based on the current command and the brainfuck spec
+                switch (c)
+                {
+                    case "Ook.Ook?":
+                        mp++;
+                        break;
+                    case "Ook?Ook.":
+                        mp--;
+                        break;
+                    case "Ook.Ook.":
+                        mem[mp]++;
+                        break;
+                    case "Ook!Ook!":
+                        mem[mp]--;
+                        break;
+                    case "Ook!Ook.":
+                        sauce += (mem[mp]);
+                        break;
+                    case "Ook.Ook!":
+                        try
+                        {
+                            result = ' ';
+                            while (result == ' ')
+                            {
+                                StartCoroutine_Auto(GetAsciiOfKeyDown());
+                            }
+                            mem[mp] = result;
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogException(e);
+                        }
+                        break;
+                    case "Ook!Ook?":
+                        if (mem[mp] == 0)
+                        {
+                            while (com[ip] != ']') ip++;
+                        }
+                        break;
+
+                    case "Ook?Ook!":
+                        if (mem[mp] != 0)
+                        {
+                            while (com[ip] != '[') ip--;
+                        }
+                        break;
+                }
+
+                // increment instruction mp
+                ip += 2;
             }
         }
     }

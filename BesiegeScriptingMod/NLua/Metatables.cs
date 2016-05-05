@@ -342,7 +342,7 @@ namespace NLua
 
 			for (int i = 1; i <= depth; i++) {
 				var type = LuaLib.LuaType (luaState, i);
-				// we dump stacks when deep in calls, calling typename while the stack is in flux can fail sometimes, so manually check for key types
+				// we dump stacks when deep in calls, calling typename while the stack is in flux can fail sometimes, so manually check for Key types
 				string typestr = (type == LuaTypes.Table) ? "table" : LuaLib.LuaTypeName (luaState, type);
 				string strrep = LuaLib.LuaToString (luaState, i).ToString ();
 
@@ -455,9 +455,9 @@ namespace NLua
 									object result = getter.Invoke (obj, args);
 									translator.Push (luaState, result);
 								} catch (TargetInvocationException e) {
-									// Provide a more readable description for the common case of key not found
+									// Provide a more readable description for the common case of Key not found
 									if (e.InnerException is KeyNotFoundException)
-										translator.ThrowError (luaState, "key '" + index + "' not found ");
+										translator.ThrowError (luaState, "Key '" + index + "' not found ");
 									else
 										translator.ThrowError (luaState, "exception indexing '" + index + "' " + e.Message);
 
