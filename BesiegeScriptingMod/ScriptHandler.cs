@@ -386,6 +386,10 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 if (_chooseObject)
                 {
                     _isOpen = false;
+                    _stopScript = false;
+                    _addingRefs = false;
+                    _showObjects = false;
+                    _isLoading = false;
                 }
                 _showObjects = GUILayout.Toggle(_showObjects, new GUIContent("Show Selected", "Shows you the selected GameObject(s)"), _toggleStyle);
                 if (_showObjects)
@@ -577,14 +581,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
 
             if (!_addingRefs && !_isLoading && !_stopScript && !_chooseObject && !_showObjects)
             {
-                if (Ide.Equals(""))
-                {
-                    GUILayout.Label("Help", _headlineStyle);
-                }
-                else
-                {
-                    GUILayout.Label("Source Code Editor", _headlineStyle);
-                }
+                GUILayout.Label(Ide.Equals("") ? "Help" : "Source Code Editor", _headlineStyle);
                 _scrollPos = GUILayout.BeginScrollView(_scrollPos);
                 if (_displayC)
                 {
@@ -840,7 +837,12 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 {
                     if (hit.collider != null)
                     {
-                        GameObject go = hit.transform.parent.gameObject;
+                        Transform current = hit.transform;
+                        while (current.parent.name != "Building Machine" && current.parent.name != "Simulation Machine")
+                        {
+                            current = current.parent;
+                        }
+                        GameObject go = current.gameObject;
                         if (_gos.ContainsKey(go))
                         {
                             _gos.Remove(go);
@@ -863,23 +865,17 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 {
                     if (hit.collider != null)
                     {
-                        if (Input.GetKey(KeyCode.LeftControl))
+                        Transform current = hit.transform;
+                        while (current.parent.name != "Building Machine" && current.parent.name != "Simulation Machine")
                         {
-                            GameObject go = hit.transform.parent.gameObject;
+                            current = current.parent;
+                        }
+                        GameObject go = current.gameObject;
+                        _gos.Clear();
                             _gos.Add(go,
                                 go.GetComponent<Renderer>()
                                     ? go.GetComponent<Renderer>().material.color
                                     : Color.clear);
-                        }
-                        else
-                        {
-                            _gos.Clear();
-                            GameObject go = hit.transform.parent.gameObject;
-                            _gos.Add(go,
-                                go.GetComponent<Renderer>()
-                                    ? go.GetComponent<Renderer>().material.color
-                                    : Color.clear);
-                        }
                     }
                 }
             }
@@ -1499,29 +1495,29 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 }
                 case "":
                 {
-                    _sauce = "<size=28><color=#ff0000ff>\t\t\t\t\tHow to write a Script and execute it</color></size>" + Util.getNewLine() +
-                             "<size=24>1. Select an IDE (you can hover your mouse over any button to see a more detailed description)</size>" + Util.getNewLine() +
-                             "<size=24>2. Press <color=#ffa500ff>Add References</color> and input a name for your script. This is important during compilation. Additionally, you can already input more references, which your script will be using.</size>" +
+                    _sauce = "<size=18><color=#ff0000ff>\t\t\t\t\tHow to write a Script and execute it</color></size>" + Util.getNewLine() +
+                             "<size=16>1. Select an IDE (you can hover your mouse over any button to see a more detailed description)</size>" + Util.getNewLine() +
+                             "<size=16>2. Press <color=#ffa500ff>Add References</color> and input a name for your script. This is important during compilation. Additionally, you can already input more references, which your script will be using.</size>" +
                              Util.getNewLine() +
-                             "<size=24>3. Press <color=#ffa500ff>Add References</color> again to get back to the source code editor. Now you can write your script. <color=#ff0000ff>DO NOT SWITCH YOUR IDE AFTER WRITING YOUR SOURCE CODE. It would be overridden.</color> When you're done, proceed with <b>Point 4</b></size>" +
+                             "<size=16>3. Press <color=#ffa500ff>Add References</color> again to get back to the source code editor. Now you can write your script. <color=#ff0000ff>DO NOT SWITCH YOUR IDE AFTER WRITING YOUR SOURCE CODE. It would be overridden.</color> When you're done, proceed with <b>Point 4</b></size>" +
                              Util.getNewLine() +
-                             "<size=24>4. Press <color=#ffa500ff>GameObject Options</color>. A submenu should show up with <color=#ffa500ff>Choose GameObject(s)</color>, <color=#ffa500ff>Show Selected</color> and <color=#ffa500ff>Add Default</color>. </size>" +
+                             "<size=16>4. Press <color=#ffa500ff>GameObject Options</color>. A submenu should show up with <color=#ffa500ff>Choose GameObject(s)</color>, <color=#ffa500ff>Show Selected</color> and <color=#ffa500ff>Add Default</color>. </size>" +
                              Util.getNewLine() +
-                             "<size=20>\t4.1. <color=#ffa500ff>Choose GameObject(s)</color> Let's you select the GameObjects your Script should be attached to when you execute it. If you press it, the editor window should be invisible and a help message with further instructions should pop up in the top-left corner. </size>" +
+                             "<size=14>\t4.1. <color=#ffa500ff>Choose GameObject(s)</color> Let's you select the GameObjects your Script should be attached to when you execute it. If you press it, the editor window should be invisible and a help message with further instructions should pop up in the top-left corner. </size>" +
                              Util.getNewLine() +
-                             "<size=20>\t4.2. <color=#ffa500ff>Show Selected</color> Let's you see the selected GameObject(s). You can click on one to remove it.</size>" + Util.getNewLine() +
-                             "<size=20>\t4.3. <color=#ffa500ff>Add Default</color> Adds the Default GameObject to the List of selected GameObjects. It is the GameObject, which the ScriptingMod is attached to and is named <color=#ffa500ff>MortimersScriptingMod</color></size>" +
+                             "<size=14>\t4.2. <color=#ffa500ff>Show Selected</color> Let's you see the selected GameObject(s). You can click on one to remove it.</size>" + Util.getNewLine() +
+                             "<size=14>\t4.3. <color=#ffa500ff>Add Default</color> Adds the Default GameObject to the List of selected GameObjects. It is the GameObject, which the ScriptingMod is attached to and is named <color=#ffa500ff>MortimersScriptingMod</color></size>" +
                              Util.getNewLine() +
-                             "<size=24>5. <color=#ffa500ff>Execute</color> compiles the script and attaches it to the selected GameObject(s). </size>" + Util.getNewLine() +
-                             "<size=20><b>\t5.1. Special cases for the IDEs <color=#ffa500ff>Brainfuck</color>, <color=#ffa500ff>Ook</color> and <color=#ffa500ff>UnityScript</color>. In order for them to work, you have to press <color=#ffa500ff>Convert</color> first. This converts your source code into C# Source Code. This happens in order for you to be able to fix any issues that came up with the convertion.</b></size>" +
+                             "<size=16>5. <color=#ffa500ff>Execute</color> compiles the script and attaches it to the selected GameObject(s). </size>" + Util.getNewLine() +
+                             "<size=14><b>\t5.1. Special cases for the IDEs <color=#ffa500ff>Brainfuck</color>, <color=#ffa500ff>Ook</color> and <color=#ffa500ff>UnityScript</color>. In order for them to work, you have to press <color=#ffa500ff>Convert</color> first. This converts your source code into C# Source Code. This happens in order for you to be able to fix any issues that came up with the convertion.</b></size>" +
                              Util.getNewLine() +
-                             "<size=24>6. <color=#ffa500ff>Stop Script</color> displays a List of currently running Scripts. Press the left MouseButton while hovering over one to destroy it. <color=#ffa500ff>OnDestroy</color> will be called.</size>" +
+                             "<size=16>6. <color=#ffa500ff>Stop Script</color> displays a List of currently running Scripts. Press the left MouseButton while hovering over one to destroy it. <color=#ffa500ff>OnDestroy</color> will be called.</size>" +
                              Util.getNewLine() +
-                             "<size=24>7. <color=#ffa500ff>Load</color> displays a List of saved Scripts. Scripts are saved when you execute them, in order to reduce data garbage on your harddrive with non-working prototypes of your Script. Click on one and the Script will be loaded into the <color=#ffa500ff>Source Code Editor</color>.</size>" +
+                             "<size=16>7. <color=#ffa500ff>Load</color> displays a List of saved Scripts. Scripts are saved when you execute them, in order to reduce data garbage on your harddrive with non-working prototypes of your Script. Click on one and the Script will be loaded into the <color=#ffa500ff>Source Code Editor</color>.</size>" +
                              Util.getNewLine() +
-                             "<size=24>8. <color=#ffa500ff>Display C# Source</color> will let you switch between your original Source Code and the converted one. Only available for <color=#ffa500ff>Brainfuck</color>, <color=#ffa500ff>Ook</color> and <color=#ffa500ff>UnityScript</color></size>" +
+                             "<size=16>8. <color=#ffa500ff>Display C# Source</color> will let you switch between your original Source Code and the converted one. Only available for <color=#ffa500ff>Brainfuck</color>, <color=#ffa500ff>Ook</color> and <color=#ffa500ff>UnityScript</color></size>" +
                              Util.getNewLine() +
-                             "<size=20>Additionally, if you want to resize the window, you can enter ScaleX [value] or ScaleY[value] into the console</size>";
+                             "<size=14>Additionally, if you want to resize the window, you can enter ScaleX [value] or ScaleY[value] into the console</size>";
                     break;
                 }
             }
