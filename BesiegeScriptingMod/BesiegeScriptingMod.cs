@@ -25,12 +25,12 @@ namespace BesiegeScriptingMod
         public void ScaleX(String arg)
         {
             float scale = float.Parse(arg);
-            myGO.GetComponent<ScriptHandler>()._winRect.width = myGO.GetComponent<ScriptHandler>()._winRect.width*scale;
+            myGO.GetComponent<ScriptHandler>().WinRect.width = myGO.GetComponent<ScriptHandler>().WinRect.width*scale;
         }
         public void ScaleY(String arg)
         {
             float scale = float.Parse(arg);
-            myGO.GetComponent<ScriptHandler>()._winRect.height = myGO.GetComponent<ScriptHandler>()._winRect.height * scale;
+            myGO.GetComponent<ScriptHandler>().WinRect.height = myGO.GetComponent<ScriptHandler>().WinRect.height * scale;
         }
     }
 }
