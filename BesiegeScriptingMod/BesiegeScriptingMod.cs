@@ -21,5 +21,16 @@ namespace BesiegeScriptingMod
             myGO.GetComponent<ScriptHandler>().OnUnload();
             MonoBehaviour.Destroy(myGO);
         }
+
+        public void ScaleX(String arg)
+        {
+            float scale = float.Parse(arg);
+            myGO.GetComponent<ScriptHandler>()._winRect.width = myGO.GetComponent<ScriptHandler>()._winRect.width*scale;
+        }
+        public void ScaleY(String arg)
+        {
+            float scale = float.Parse(arg);
+            myGO.GetComponent<ScriptHandler>()._winRect.height = myGO.GetComponent<ScriptHandler>()._winRect.height * scale;
+        }
     }
 }

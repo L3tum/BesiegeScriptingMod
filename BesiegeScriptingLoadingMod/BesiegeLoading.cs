@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Reflection;
 using spaar.ModLoader;
 using UnityEngine;
+using Commands = spaar.Commands;
+using Console = spaar.ModLoader.Internal.Tools.Console;
 
 namespace BesiegeScriptingLoadingMod
 {
@@ -32,6 +34,8 @@ namespace BesiegeScriptingLoadingMod
         {
             Key = Keybindings.AddKeybinding("Open scripting mod", Key);
             selecting = Keybindings.AddKeybinding("Selected gameobject", selecting);
+            Commands.RegisterCommand("ScaleX", ScaleX, "Scales width of the Scripting Mod");
+            Commands.RegisterCommand("ScaleY", ScaleY, "Scales heigth of the Scripting Mod");
             foreach (string s in _list)
             {
                 Assembly.LoadFrom(Resource + s);
@@ -40,6 +44,18 @@ namespace BesiegeScriptingLoadingMod
             bsmType = mod.GetType("BesiegeScriptingMod.BesiegeScriptingMod");
             bsm = Activator.CreateInstance(bsmType);
             bsmType.GetMethod("OnLoad").Invoke(bsm, new object[]{Key, selecting});
+        }
+
+        private string ScaleY(string[] args, IDictionary<string, string> namedArgs)
+        {
+            bsmType.GetMethod("ScaleY").Invoke(bsm, new[] {args[0]});
+            return "Scaled by " + args[0];
+        }
+
+        private string ScaleX(string[] args, IDictionary<string, string> namedArgs)
+        {
+            bsmType.GetMethod("ScaleX").Invoke(bsm, new[] {args[0]});
+            return "Scaled by " + args[0];
         }
 
         public override void OnUnload()
