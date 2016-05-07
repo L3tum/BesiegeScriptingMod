@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.AccessControl;
 using spaar.ModLoader;
 using spaar.ModLoader.UI;
 using UnityEngine;
@@ -15,13 +14,11 @@ namespace BesiegeScriptingMod
         private readonly int _winId = spaar.ModLoader.Util.GetWindowID();
         private readonly int _chooseWinId = spaar.ModLoader.Util.GetWindowID();
         private readonly int _helpId = spaar.ModLoader.Util.GetWindowID();
-
-        private Vector2 _areaLoc1;
         private string _name = "";
         private Vector2 _refPos;
         private Vector2 _scrollPos = new Vector2(0, Mathf.Infinity);
-        public Vector2 _windowLoc = new Vector2(Screen.width - 1200.0f, Screen.height - 400.0f);
-        public Rect _winRect;
+        private Vector2 _windowLoc = new Vector2(Screen.width - 1200.0f, Screen.height - 400.0f);
+        public Rect WinRect;
         private Rect _chooseRect = new Rect(0, 20.0f, 100.0f, 100.0f);
         private bool _addingRefs;
         public readonly Dictionary<string, Script> BrainfuckScripts = new Dictionary<string, Script>();
@@ -74,7 +71,7 @@ namespace BesiegeScriptingMod
             _refs += Application.dataPath + "/Managed/UnityEngine.dll" + Util.getNewLine();
             _refs += Application.dataPath + "/Managed/System.dll";
 
-            _winRect = new Rect(100.0f, 20.0f, _windowLoc.x, _windowLoc.y);
+            WinRect = new Rect(100.0f, 20.0f, _windowLoc.x, _windowLoc.y);
             if (!Directory.Exists(Application.dataPath + "/Mods/Scripts"))
             {
                 Debug.Log("[ScriptingMod]:Installation incomplete!");
@@ -283,7 +280,6 @@ namespace BesiegeScriptingMod
                 }
                 #endregion
             }
-            _areaLoc1 = new Vector2(_windowLoc.x - _windowLoc.x/100.0f, _windowLoc.y/2/2);
             UpdateSauce();
         }
 
@@ -321,7 +317,7 @@ namespace BesiegeScriptingMod
                     fontStyle = FontStyle.Bold
                 };
 
-                _winRect = GUILayout.Window(_winId, _winRect,
+                WinRect = GUILayout.Window(_winId, WinRect,
                     Func,
                     "Scripting Mod by Mortimer");
             }
