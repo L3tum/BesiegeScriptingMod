@@ -13,13 +13,16 @@ namespace BesiegeScriptingMod
     internal class ScriptHandler : MonoBehaviour
     {
         private readonly int _winId = spaar.ModLoader.Util.GetWindowID();
-        private readonly int chooseWinID = spaar.ModLoader.Util.GetWindowID();
+        private readonly int _chooseWinId = spaar.ModLoader.Util.GetWindowID();
+        private readonly int _helpId = spaar.ModLoader.Util.GetWindowID();
+
         private Vector2 _areaLoc1;
         private string _name = "";
         private Vector2 _refPos;
         private Vector2 _scrollPos = new Vector2(0, Mathf.Infinity);
-        private Vector2 _windowLoc = new Vector2(Screen.width - 400.0f, Screen.height - 100.0f);
+        private Vector2 _windowLoc = new Vector2(Screen.width - 1200.0f, Screen.height - 400.0f);
         private Rect _winRect;
+        private Rect _chooseRect = new Rect(0, 20.0f, 100.0f, 100.0f);
         private bool _addingRefs;
         public readonly Dictionary<string, Script> BrainfuckScripts = new Dictionary<string, Script>();
         public readonly Dictionary<string, Script> ChefScripts = new Dictionary<string, Script>();
@@ -36,14 +39,14 @@ namespace BesiegeScriptingMod
         private string _cSauce = "";
         private bool _displayC;
         public string Ide = "";
-        private String lastIDE = "";
+        private string _lastIde = "";
         private bool _ideSelection;
         private bool _isLoading;
         private bool _isOpen;
         private bool _stopScript;
         private bool _chooseObject;
         private bool _showObjects;
-        private bool showGOOptions;
+        private bool _showGoOptions;
         private bool cs;
         private bool js;
         private bool py;
@@ -55,8 +58,10 @@ namespace BesiegeScriptingMod
         private GUIStyle _toggleStyle;
         private GUIStyle _labelStyle;
         private GUIStyle _headlineStyle;
-        private Key Key;
-        private Key selecting;
+        private GUIStyle _defaultLabel;
+        private Key _key;
+        private Key _selecting;
+        private string _lastTooltip = "";
 
         public void Start()
         {
@@ -284,8 +289,8 @@ namespace BesiegeScriptingMod
 
         public void SetKeys(Key key, Key key2)
         {
-            Key = key;
-            selecting = key2;
+            _key = key;
+            _selecting = key2;
         }
 
         public void OnGUI()
@@ -297,6 +302,7 @@ namespace BesiegeScriptingMod
                     _scrollPos.y = Mathf.Infinity;
                 }
                 GUI.skin = ModGUI.Skin;
+                GUI.skin.textArea.richText = true;
                 _toggleStyle = new GUIStyle(GUI.skin.button) {onNormal = Elements.Buttons.Red.hover};
 
                 _labelStyle = new GUIStyle(GUI.skin.label)
@@ -329,14 +335,31 @@ namespace BesiegeScriptingMod
                     border = _labelStyle.border,
                     fontStyle = FontStyle.Bold
                 };
-                GUILayout.Window(chooseWinID, new Rect(0, 20.0f, 100.0f, 100.0f), Func2, "Choosing Objects");
+                _chooseRect = GUILayout.Window(_chooseWinId, _chooseRect, Func2, "Choosing Objects");
             }
+            if (_lastTooltip != "")
+            {
+                GUI.skin = ModGUI.Skin;
+                var background = GUI.skin.label.normal.background;
+                _defaultLabel = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 24,
+                    normal = new GUIStyleState() { background = background, textColor = Color.white }
+                };
+                GUILayout.Window(_helpId, new Rect(Input.mousePosition.x, Screen.height - Input.mousePosition.y + 10.0f, 100.0f, 50.0f), HelpFunc, "ToolTip");
+            }
+        }
+
+        private void HelpFunc(int id)
+        {
+            GUILayout.Label(_lastTooltip, _defaultLabel);
         }
 
         private void Func2(int id)
         {
-            GUILayout.Label("Choosing GameObjects. Press " + Key.Modifier + " + " + Key.Trigger +
-                            " to confirm selection.", _headlineStyle);
+            GUILayout.Label(@"Choosing GameObjects. Press " + _selecting.Trigger + @" while hovering over an object to select it. Hold " + _selecting.Modifier + @" to select multiple.
+Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _headlineStyle);
+            GUI.DragWindow();
         }
 
         private void Func(int id)
@@ -345,14 +368,56 @@ namespace BesiegeScriptingMod
 
             #region Buttons
 
-            #region IDE
+            #region Menus
 
             GUILayout.BeginHorizontal(GUI.skin.box);
-            _ideSelection = GUILayout.Toggle(_ideSelection, "IDE", _toggleStyle);
-            if (_ideSelection)
+            _ideSelection = GUILayout.Toggle(_ideSelection, new GUIContent("IDE", "Select a programming language"), _toggleStyle);
+            _showGoOptions = GUILayout.Toggle(_showGoOptions, new GUIContent("GameObject Options", "Diplays GameObject options"), _toggleStyle);
+            GUILayout.EndHorizontal();
+
+            #endregion
+
+            #region SubMenus
+
+            GUILayout.BeginHorizontal(GUI.skin.box);
+
+            #region GOS
+
+            if (_showGoOptions)
             {
-                lastIDE = Ide;
-                cs = GUILayout.Toggle(cs, "CSharp", _toggleStyle);
+                _ideSelection = false;
+                _chooseObject = GUILayout.Toggle(_chooseObject, new GUIContent("Choose GameObject(s)", "Select the GameObject(s) in the game the Script should be attached to"), _toggleStyle);
+                if (_chooseObject)
+                {
+                    _isOpen = false;
+                }
+                _showObjects = GUILayout.Toggle(_showObjects, new GUIContent("Show Selected", "Shows you the selected GameObject(s)"), _toggleStyle);
+                if (_showObjects)
+                {
+                    _stopScript = false;
+                    _addingRefs = false;
+                    _chooseObject = false;
+                    _isLoading = false;
+                }
+                if (GUILayout.Button(new GUIContent("Add Default", "Add the Default GameObject to the list of selected GameObjects")))
+                {
+                    if (!_gos.Keys.Contains(gameObject))
+                    {
+                        _gos.Add(gameObject, Color.black);
+                    }
+                }
+            }
+
+            #endregion 
+
+            #region IDE
+            else if (_ideSelection)
+            {
+                _showGoOptions = false;
+                _chooseObject = false;
+                _showObjects = false;
+                _lastIde = Ide;
+                cs = GUILayout.Toggle(cs, new GUIContent("CSharp", "Select C# as your language"), _toggleStyle);
                 if (cs)
                 {
                     js = false;
@@ -362,7 +427,7 @@ namespace BesiegeScriptingMod
                     ook = false;
                     Ide = "CSharp";
                 }
-                py = GUILayout.Toggle(py, "Python", _toggleStyle);
+                py = GUILayout.Toggle(py, new GUIContent("Python", "Select Python as your language"), _toggleStyle);
                 if (py)
                 {
                     cs = false;
@@ -372,7 +437,7 @@ namespace BesiegeScriptingMod
                     ook = false;
                     Ide = "Python";
                 }
-                js = GUILayout.Toggle(js, "UnityScript", _toggleStyle);
+                js = GUILayout.Toggle(js, new GUIContent("UnityScript", "Select UnityScript as your language"), _toggleStyle);
                 if (js)
                 {
                     cs = false;
@@ -382,7 +447,7 @@ namespace BesiegeScriptingMod
                     ook = false;
                     Ide = "JavaScript";
                 }
-                lua = GUILayout.Toggle(lua, "Lua", _toggleStyle);
+                lua = GUILayout.Toggle(lua, new GUIContent("Lua", "Select Lua as your language"), _toggleStyle);
                 if (lua)
                 {
                     cs = false;
@@ -392,7 +457,7 @@ namespace BesiegeScriptingMod
                     ook = false;
                     Ide = "Lua";
                 }
-                bf = GUILayout.Toggle(bf, "Brainfuck", _toggleStyle);
+                bf = GUILayout.Toggle(bf, new GUIContent("Brainfuck", "Select Brainfuck as your language"), _toggleStyle);
                 if (bf)
                 {
                     cs = false;
@@ -402,7 +467,7 @@ namespace BesiegeScriptingMod
                     ook = false;
                     Ide = "Brainfuck";
                 }
-                ook = GUILayout.Toggle(ook, "Ook", _toggleStyle);
+                ook = GUILayout.Toggle(ook, new GUIContent("Ook", "Select Ook as your language"), _toggleStyle);
                 if (ook)
                 {
                     cs = false;
@@ -412,7 +477,17 @@ namespace BesiegeScriptingMod
                     bf = false;
                     Ide = "Ook";
                 }
-                if (!lastIDE.Equals(Ide))
+                if (GUILayout.Button(new GUIContent("Deselect", "Deselects every language and displays help message")))
+                {
+                    cs = false;
+                    py = false;
+                    js = false;
+                    lua = false;
+                    bf = false;
+                    ook = false;
+                    Ide = "";
+                }
+                if (!_lastIde.Equals(Ide))
                 {
                     UpdateSauce();
                     _ideSelection = false;
@@ -428,39 +503,19 @@ namespace BesiegeScriptingMod
                 }
                 */
             }
+            #endregion
+
             GUILayout.EndHorizontal();
 
             #endregion
 
-            #region GOOptions
-
-            GUILayout.BeginHorizontal(GUI.skin.box);
-            showGOOptions = GUILayout.Toggle(showGOOptions, "GameObject Options", _toggleStyle);
-            if (showGOOptions)
-            {
-                _chooseObject = GUILayout.Toggle(_chooseObject, "Choose GameObject", _toggleStyle);
-                if (_chooseObject)
-                {
-                    _isOpen = false;
-                }
-                _showObjects = GUILayout.Toggle(_showObjects, "Show selected GOs", _toggleStyle);
-                if (GUILayout.Button("Add Default GO"))
-                {
-                    if (!_gos.Keys.Contains(gameObject))
-                    {
-                        _gos.Add(gameObject, Color.black);
-                    }
-                }
-            }
-            GUILayout.EndHorizontal();
-
-            #endregion
+            #region EditorToggles
 
             GUILayout.BeginHorizontal(GUI.skin.box);
 
             #region Execute
 
-            if (GUILayout.Button("Execute"))
+            if (GUILayout.Button(new GUIContent("Execute", "Execute your Script. It will be attached to every selected GameObject")))
             {
                 Execution();
             }
@@ -472,11 +527,11 @@ namespace BesiegeScriptingMod
             if (!Ide.Equals("CSharp") && !Ide.Equals("Lua") && !Ide.Equals("Python") && !Ide.Equals("Chef") &&
                 !Ide.Equals("Java"))
             {
-                if (GUILayout.Button("Convert"))
+                if (GUILayout.Button(new GUIContent("Convert", "Convert your Source Code into C# code. This is necessary in order to execute it")))
                 {
                     Convertion();
                 }
-                _displayC = GUILayout.Toggle(_displayC, "Display C# Source", _toggleStyle);
+                _displayC = GUILayout.Toggle(_displayC, new GUIContent("Display C# Source", "You can either display your original source, or the converted source"), _toggleStyle);
             }
 
             #endregion
@@ -484,38 +539,56 @@ namespace BesiegeScriptingMod
             //var last = _isSaving;
             //_isSaving = GUILayout.Toggle(_isSaving, "Save", GUI.skin.button);
 
-            _stopScript = GUILayout.Toggle(_stopScript, "Stop Script", _toggleStyle);
+            _stopScript = GUILayout.Toggle(_stopScript, new GUIContent("Stop Script", "Shows you a list of running Scripts. If you press the Left Mousebutton while hovering over one, it will be destroyed"), _toggleStyle);
             if (_stopScript)
             {
                 _isLoading = false;
                 _addingRefs = false;
                 _chooseObject = false;
+                _showObjects = false;
             }
 
-            _isLoading = GUILayout.Toggle(_isLoading, "Load", _toggleStyle);
+            _isLoading = GUILayout.Toggle(_isLoading, new GUIContent("Load", "Shows you a list of available Scripts. The standard Scripts are not included"), _toggleStyle);
 
             if (_isLoading)
             {
                 _stopScript = false;
                 _addingRefs = false;
                 _chooseObject = false;
+                _showObjects = false;
             }
 
             if (!Ide.Equals("Lua"))
             {
-                _addingRefs = GUILayout.Toggle(_addingRefs, "Add references", _toggleStyle);
+                _addingRefs = GUILayout.Toggle(_addingRefs, new GUIContent("Add references", "Let's you define the libraries you are using in your Script. The most common ones are predefined"), _toggleStyle);
+                if (_addingRefs)
+                {
+                    _isLoading = false;
+                    _chooseObject = false;
+                    _stopScript = false;
+                    _showObjects = false;
+                }
             }
 
-            _isOpen = GUILayout.Toggle(_isOpen, "Open/Close Editor", _toggleStyle);
+            _isOpen = GUILayout.Toggle(_isOpen, new GUIContent("Open/Close Editor", "Opens/Closes the whole editor window"), _toggleStyle);
             //GUILayout.EndArea();
 
             GUILayout.EndHorizontal();
+
+            #endregion 
 
             #endregion
 
             if (!_addingRefs && !_isLoading && !_stopScript && !_chooseObject && !_showObjects)
             {
-                GUILayout.Label("Source Code Editor", _headlineStyle);
+                if (Ide.Equals(""))
+                {
+                    GUILayout.Label("Help", _headlineStyle);
+                }
+                else
+                {
+                    GUILayout.Label("Source Code Editor", _headlineStyle);
+                }
                 _scrollPos = GUILayout.BeginScrollView(_scrollPos);
                 if (_displayC)
                 {
@@ -597,67 +670,67 @@ namespace BesiegeScriptingMod
                     var fileInfo in
                         CSharpScripts.Where(
                             fileInfo =>
-                                fileInfo.Value.sourceFile.Contains("TempScripts") && GUILayout.Button(fileInfo.Key)))
+                                fileInfo.Value.sourceFile.Contains("TempScripts") && GUILayout.Button(fileInfo._key)))
                 {
                     File.Copy(fileInfo.Value.sourceFile,
-                        Application.dataPath + "/Mods/Scripts/CSharpScripts/" + fileInfo.Key + ".cs", true);
+                        Application.dataPath + "/Mods/Scripts/CSharpScripts/" + fileInfo._key + ".cs", true);
                     File.Copy(fileInfo.Value.refFile,
-                        Application.dataPath + "/Mods/Scripts/CSharpScripts/" + fileInfo.Key + ".ref", true);
+                        Application.dataPath + "/Mods/Scripts/CSharpScripts/" + fileInfo._key + ".ref", true);
                 }
                 foreach (
                     var fileInfo in
                         JavaScriptScripts.Where(
                             fileInfo =>
-                                fileInfo.Value.sourceFile.Contains("TempScripts") && GUILayout.Button(fileInfo.Key)))
+                                fileInfo.Value.sourceFile.Contains("TempScripts") && GUILayout.Button(fileInfo._key)))
                 {
                     File.Copy(fileInfo.Value.sourceFile,
-                        Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + fileInfo.Key + ".js", true);
+                        Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + fileInfo._key + ".js", true);
                     File.Copy(fileInfo.Value.refFile,
-                        Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + fileInfo.Key + ".ref", true);
+                        Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + fileInfo._key + ".ref", true);
                 }
                 foreach (
                     var fileInfo in
                         LuaScripts.Where(
                             fileInfo =>
-                                fileInfo.Value.sourceFile.Contains("TempScripts") && GUILayout.Button(fileInfo.Key)))
+                                fileInfo.Value.sourceFile.Contains("TempScripts") && GUILayout.Button(fileInfo._key)))
                 {
                     File.Copy(fileInfo.Value.sourceFile,
-                        Application.dataPath + "/Mods/Scripts/LuaScripts/" + fileInfo.Key + ".lua", true);
+                        Application.dataPath + "/Mods/Scripts/LuaScripts/" + fileInfo._key + ".lua", true);
                     File.Copy(fileInfo.Value.refFile,
-                        Application.dataPath + "/Mods/Scripts/LuaScripts/" + fileInfo.Key + ".ref", true);
+                        Application.dataPath + "/Mods/Scripts/LuaScripts/" + fileInfo._key + ".ref", true);
                 }
                 foreach (
                     var fileInfo in
                         PythonScripts.Where(
                             fileInfo =>
-                                fileInfo.Value.sourceFile.Contains("TempScripts") && GUILayout.Button(fileInfo.Key)))
+                                fileInfo.Value.sourceFile.Contains("TempScripts") && GUILayout.Button(fileInfo._key)))
                 {
                     File.Copy(fileInfo.Value.sourceFile,
-                        Application.dataPath + "/Mods/Scripts/PythonScripts/" + fileInfo.Key + ".py", true);
+                        Application.dataPath + "/Mods/Scripts/PythonScripts/" + fileInfo._key + ".py", true);
                     File.Copy(fileInfo.Value.refFile,
-                        Application.dataPath + "/Mods/Scripts/PythonScripts/" + fileInfo.Key + ".ref", true);
+                        Application.dataPath + "/Mods/Scripts/PythonScripts/" + fileInfo._key + ".ref", true);
                 }
                 foreach (
                     var fileInfo in
                         BrainfuckScripts.Where(
                             fileInfo =>
-                                fileInfo.Value.sourceFile.Contains("TempScripts") && GUILayout.Button(fileInfo.Key)))
+                                fileInfo.Value.sourceFile.Contains("TempScripts") && GUILayout.Button(fileInfo._key)))
                 {
                     File.Copy(fileInfo.Value.sourceFile,
-                        Application.dataPath + "/Mods/Scripts/BrainfuckScripts/" + fileInfo.Key + ".bf", true);
+                        Application.dataPath + "/Mods/Scripts/BrainfuckScripts/" + fileInfo._key + ".bf", true);
                     File.Copy(fileInfo.Value.refFile,
-                        Application.dataPath + "/Mods/Scripts/BrainfuckScripts/" + fileInfo.Key + ".ref", true);
+                        Application.dataPath + "/Mods/Scripts/BrainfuckScripts/" + fileInfo._key + ".ref", true);
                 }
                 foreach (
                     var fileInfo in
                         ChefScripts.Where(
                             fileInfo =>
-                                fileInfo.Value.sourceFile.Contains("TempScripts") && GUILayout.Button(fileInfo.Key)))
+                                fileInfo.Value.sourceFile.Contains("TempScripts") && GUILayout.Button(fileInfo._key)))
                 {
                     File.Copy(fileInfo.Value.sourceFile,
-                        Application.dataPath + "/Mods/Scripts/ChefScripts/" + fileInfo.Key + ".recipe", true);
+                        Application.dataPath + "/Mods/Scripts/ChefScripts/" + fileInfo._key + ".recipe", true);
                     File.Copy(fileInfo.Value.refFile,
-                        Application.dataPath + "/Mods/Scripts/ChefScripts/" + fileInfo.Key + ".ref", true);
+                        Application.dataPath + "/Mods/Scripts/ChefScripts/" + fileInfo._key + ".ref", true);
                 }
                 GUILayout.EndScrollView();
             }
@@ -754,15 +827,16 @@ namespace BesiegeScriptingMod
 
             #endregion
 
+            _lastTooltip = GUI.tooltip;
             GUI.DragWindow();
         }
 
         public void Update()
         {
-            if (Key.Pressed())
+            if (_key.Pressed())
                 _isOpen = !_isOpen;
             if (!_chooseObject) return;
-            if (selecting.Pressed())
+            if (_selecting.Pressed())
             {
                 RaycastHit hit;
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -820,7 +894,7 @@ namespace BesiegeScriptingMod
                     go.Key.GetComponent<Renderer>().material.color = Color.red;
                 }
             }
-            if (Key.Pressed())
+            if (_key.Pressed())
             {
                 if (_gos.Count > 0)
                 {
@@ -1425,6 +1499,23 @@ namespace BesiegeScriptingMod
                     {
                         _sauce = tr.ReadToEnd();
                     }
+                    break;
+                }
+                case "":
+                {
+                    _sauce = "<size=28><color=#ff0000ff>\t\t\t\t\tHow to write a Script and execute it</color></size>" + Util.getNewLine() + 
+                             "<size=24>1. Select an IDE (you can hover your mouse over any button to see a more detailed description)</size>" + Util.getNewLine() +
+                             "<size=24>2. Press <color=#ffa500ff>Add References</color> and input a name for your script. This is important during compilation. Additionally, you can already input more references, which your script will be using.</size>" + Util.getNewLine() +
+                             "<size=24>3. Press <color=#ffa500ff>Add References</color> again to get back to the source code editor. Now you can write your script. <color=#ff0000ff>DO NOT SWITCH YOUR IDE AFTER WRITING YOUR SOURCE CODE. It would be overridden.</color> When you're done, proceed with <b>Point 4</b></size>" + Util.getNewLine() +
+                             "<size=24>4. Press <color=#ffa500ff>GameObject Options</color>. A submenu should show up with <color=#ffa500ff>Choose GameObject(s)</color>, <color=#ffa500ff>Show Selected</color> and <color=#ffa500ff>Add Default</color>. </size>" + Util.getNewLine() +
+                             "<size=20>\t4.1. <color=#ffa500ff>Choose GameObject(s)</color> Let's you select the GameObjects your Script should be attached to when you execute it. If you press it, the editor window should be invisible and a help message with further instructions should pop up in the top-left corner. </size>" + Util.getNewLine() +
+                             "<size=20>\t4.2. <color=#ffa500ff>Show Selected</color> Let's you see the selected GameObject(s). You can click on one to remove it.</size>" + Util.getNewLine() +
+                             "<size=20>\t4.3. <color=#ffa500ff>Add Default</color> Adds the Default GameObject to the List of selected GameObjects. It is the GameObject, which the ScriptingMod is attached to and is named <color=#ffa500ff>MortimersScriptingMod</color></size>" + Util.getNewLine() +
+                             "<size=24>5. <color=#ffa500ff>Execute</color> compiles the script and attaches it to the selected GameObject(s). </size>" + Util.getNewLine() +
+                             "<size=20><b>\t5.1. Special cases for the IDEs <color=#ffa500ff>Brainfuck</color>, <color=#ffa500ff>Ook</color> and <color=#ffa500ff>UnityScript</color>. In order for them to work, you have to press <color=#ffa500ff>Convert</color> first. This converts your source code into C# Source Code. This happens in order for you to be able to fix any issues that came up with the convertion.</b></size>" + Util.getNewLine() +
+                             "<size=24>6. <color=#ffa500ff>Stop Script</color> displays a List of currently running Scripts. Press the left MouseButton while hovering over one to destroy it. <color=#ffa500ff>OnDestroy</color> will be called.</size>" + Util.getNewLine() +
+                             "<size=24>7. <color=#ffa500ff>Load</color> displays a List of saved Scripts. Scripts are saved when you execute them, in order to reduce data garbage on your harddrive with non-working prototypes of your Script. Click on one and the Script will be loaded into the <color=#ffa500ff>Source Code Editor</color>.</size>" + Util.getNewLine() +
+                             "<size=24>8. <color=#ffa500ff>Display C# Source</color> will let you switch between your original Source Code and the converted one. Only available for <color=#ffa500ff>Brainfuck</color>, <color=#ffa500ff>Ook</color> and <color=#ffa500ff>UnityScript</color></size>";
                     break;
                 }
             }
