@@ -48,10 +48,36 @@ namespace BesiegeScriptingMod.LolCode
                 }
                 else if (sauce[i].Equals("I") && sauce[i + 1].Equals("HAS") && sauce[i + 2].Equals("A"))
                 {
-                    sauce[i] = "var " + sauce[i + 3] + ";";
+                    if (sauce[i + 4].Equals("ITZ"))
+                    {
+                        sauce[i] = "var " + sauce[i + 3] + "= " + sauce[i + 5] + ";";
+                        sauce[i + 1] = String.Empty;
+                        sauce[i + 2] = String.Empty;
+                        sauce[i + 3] = String.Empty;
+                        sauce[i + 4] = String.Empty;
+                        sauce[i + 5] = String.Empty;
+                    }
+                    else
+                    {
+                        sauce[i] = "var " + sauce[i + 3] + ";";
+                        sauce[i + 1] = String.Empty;
+                        sauce[i + 2] = String.Empty;
+                        sauce[i + 3] = String.Empty;
+                    }
+                }
+                else if (sauce[i].Equals("R"))
+                {
+                    sauce[i - 1] = sauce[i - 1] + " = " + sauce[i + 1] + ";";
+                    sauce[i] = string.Empty;
                     sauce[i + 1] = String.Empty;
-                    sauce[i + 2] = String.Empty;
-                    sauce[i + 3] = String.Empty;
+                }
+                else if (sauce[i].Equals("WIN"))
+                {
+                    sauce[i] = "true";
+                }
+                else if (sauce[i].Equals("FAIL"))
+                {
+                    sauce[i] = "false";
                 }
             }
             return sauce;
