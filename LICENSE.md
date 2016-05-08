@@ -1,3 +1,5 @@
+#License
+
 Besiege Scripting Mod to create Scripts for the game "Besiege"
 Copyright (C) 2016 Tom "Letum" Pauly
 
@@ -8,9 +10,12 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 Contact information: 
-Github: https://github.com/L3tum
-Besiege Forum: http://forum.spiderlinggames.co.uk/member/2328-letum
-Email: TPaulyAKALetumAKAmORtiMER@gmail.com
+
+[Github](https://github.com/L3tum)
+
+[Besiege Forum](http://forum.spiderlinggames.co.uk/member/2328-letum)
+
+[Email](TPaulyAKALetumAKAmORtiMER@gmail.com)
 
 GNU General Public License 2.0:
 
@@ -106,7 +111,7 @@ NO WARRANTY
 END OF TERMS AND CONDITIONS
 
 ======================================
-Unity 3D-NLua License:
+##Unity 3D-NLua License:
 
 Boost Software License - Version 1.0 - August 17th, 2003
 
@@ -133,7 +138,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
 ===========================
-IronPython License:
+##IronPython License:
 
 Apache License
 Version 2.0, January 2004
@@ -207,7 +212,7 @@ While redistributing the Work or Derivative Works thereof, You may choose to off
 
 
 ================================
-Mono.Cecil License:
+##Mono.Cecil License:
 
 Copyright (c) 2008 - 2015 Jb Evain
 Copyright (c) 2008 - 2011 Novell, Inc.
