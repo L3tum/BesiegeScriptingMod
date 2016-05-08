@@ -176,6 +176,7 @@
     <Compile Include="PythonConstructorInfo.cs" />
     <Compile Include="Script.cs" />
     <Compile Include="ScriptHandler.cs" />
+    <Compile Include="TrumpScript\Allowed.cs" />
     <Compile Include="TrumpScript\TrumpScript.cs" />
     <Compile Include="Tuple.cs" />
     <Compile Include="Util.cs" />
