@@ -8,3 +8,4 @@ The Mod can be downloaded from this repository, or from the [Forum](http://forum
 [![License](https://img.shields.io/badge/license-GPL%202.0-blue.svg)](https://github.com/L3tum/BesiegeScriptingMod/blob/master/LICENSE.md)
 [![Issues Open](https://img.shields.io/github/issues/L3tum/BesiegeScriptingMod.svg)](https://huboard.com/L3tum/BesiegeScriptingMod/)
 [![Milestone](https://img.shields.io/badge/Milestone-Update%200.2-brightgreen.svg)](https://huboard.com/L3tum/BesiegeScriptingMod/#/?milestone=%5B%22Update%200.2%22%5D)
+[![Downloads](https://img.shields.io/github/downloads/L3tum/BesiegeScriptingMod/total.svg)](https://github.com/L3tum/BesiegeScriptingMod/releases)
