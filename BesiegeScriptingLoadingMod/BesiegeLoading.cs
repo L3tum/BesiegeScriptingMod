@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using spaar.ModLoader;
 using UnityEngine;
@@ -15,6 +16,7 @@ namespace BesiegeScriptingLoadingMod
         private Type bsmType;
         private Key Key = new Key(KeyCode.LeftControl, KeyCode.L);
         private Key selecting = new Key(KeyCode.LeftControl, KeyCode.Mouse2);
+        private String str = "";
 
         private readonly List<String> _list = new List<string>()
         {
@@ -32,6 +34,12 @@ namespace BesiegeScriptingLoadingMod
 
         public override void OnLoad()
         {
+            String[] strs = Application.dataPath.Split('/');
+            for (int i = 0; i < strs.Length - 1; i++)
+            {
+                str += strs[i] + "/";
+            }
+            File.Copy(Resource + "Plugins/x86/lua52.dll", str + "lua52.dll", true); 
             Key = Keybindings.AddKeybinding("Open scripting mod", Key);
             selecting = Keybindings.AddKeybinding("Selected gameobject", selecting);
             Commands.RegisterCommand("ScaleX", ScaleX, "Scales width of the Scripting Mod");
@@ -60,6 +68,7 @@ namespace BesiegeScriptingLoadingMod
 
         public override void OnUnload()
         {
+            File.Copy(str + "lua52.dll", Resource + "Plugins/x86/lua52.dll");
             bsmType.GetMethod("OnUnload").Invoke(bsm, null);
         }
 

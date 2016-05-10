@@ -1183,8 +1183,8 @@ namespace BesiegeScriptingMod.TrumpScript
             "everybody",
             "world",
             "time",
-            25 â€“
-    "their",
+            "25€",
+            "their",
             "come",
             "these",
             "really",

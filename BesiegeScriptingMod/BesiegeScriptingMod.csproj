@@ -28,7 +28,7 @@
     <DebugType>full</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;UNITY_3D</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_3D; USE_KERALUA; LUA_CORE; CATCH_EXCEPTIONS</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -186,14 +186,9 @@
     <None Include="Lib\ensurepip\_bundled\pip-1.5.6-py2.py3-none-any.whl" />
     <None Include="Lib\ensurepip\_bundled\setuptools-3.6-py2.py3-none-any.whl" />
     <None Include="packages.config" />
-    <None Include="Plugins\lua52.bundle.meta" />
-    <None Include="Plugins\x86.meta" />
-    <None Include="Plugins\x86_64.meta" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Plugins\lua52.bundle\" />
-    <Folder Include="Plugins\x86\" />
-    <Folder Include="Plugins\x86_64\" />
+    <Folder Include="KeraLua\Plugins\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Lib\abc.py" />

@@ -1,16 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using Community.CsharpSqlite;
 using UnityEngine;
-using ICSharpCode.NRefactory;
-using ICSharpCode.NRefactory.PrettyPrinter;
-using ICSharpCode.NRefactory.Visitors;
 using ICSharpCode.PythonBinding;
+using Debug = UnityEngine.Debug;
 
 namespace BesiegeScriptingMod
 {
@@ -180,10 +176,10 @@ namespace BesiegeScriptingMod
                     lines[i] = Regex.Replace(lines[i], ns + ".", string.Empty);
                 }
             }
-            lines = lines.Where(x => !string.IsNullOrEmpty(x) && !x.Equals("\r\n") && !x.Equals("\r") && !x.Equals("\n") && !String.IsNullOrEmpty(x.Trim())).ToArray();
             sauce = String.Concat(lines);
             finalSauce += imports;
             finalSauce += @"class " + name + "(MonoBehaviour):" + getNewLine() + sauce;
+            Debug.Log(finalSauce);
             return finalSauce;
         }
 

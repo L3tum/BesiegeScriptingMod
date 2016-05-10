@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Linq;
+using System.Text;
+using System.Xml;
+using System.Xml.Linq;
 using NLua;
 using UnityEngine;
 
@@ -21,10 +25,17 @@ namespace BesiegeScriptingMod
             env["this"] = this; // Give the script access to the gameobject.
             env["transform"] = transform;
             env["gameObject"] = gameObject;
-            env["enabled"] = enabled; 
+            env["enabled"] = enabled;
+
+            XElement Configuration = new XElement("LuaGlobals", env.Globals.Select(s => new XElement(s.Replace(':', '-').Replace('(', '_'))));
+            using (XmlWriter xml = new XmlTextWriter(Application.dataPath + "lua.xml", Encoding.Unicode))
+            {
+                Configuration.WriteTo(xml);
+            }
 
             try
             {
+                Debug.Log(source);
                 env.DoString(source);
             }
             catch (NLua.Exceptions.LuaException e)

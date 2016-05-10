@@ -81,6 +81,7 @@ namespace BesiegeScriptingMod
                 var di = new DirectoryInfo(Application.dataPath + "/Mods/Scripts");
 
                 #region Python
+
                 if (Directory.Exists(Application.dataPath + "/Mods/Scripts/PythonScripts"))
                 {
                     foreach (var info in di.GetDirectories().First(info => info.Name.Equals("PythonScripts")).GetFiles())
@@ -105,9 +106,11 @@ namespace BesiegeScriptingMod
                 {
                     Directory.CreateDirectory(Application.dataPath + "/Mods/Scripts/PythonScripts");
                 }
+
                 #endregion
 
                 #region Lua
+
                 if (Directory.Exists(Application.dataPath + "/Mods/Scripts/LuaScripts"))
                 {
                     foreach (
@@ -134,9 +137,11 @@ namespace BesiegeScriptingMod
                 {
                     Directory.CreateDirectory(Application.dataPath + "/Mods/Scripts/LuaScripts");
                 }
+
                 #endregion
 
                 #region Brainfuck
+
                 if (Directory.Exists(Application.dataPath + "/Mods/Scripts/BrainfuckScripts"))
                 {
                     foreach (
@@ -163,9 +168,11 @@ namespace BesiegeScriptingMod
                 {
                     Directory.CreateDirectory(Application.dataPath + "/Mods/Scripts/BrainfuckScripts");
                 }
+
                 #endregion
 
                 #region Ook
+
                 if (Directory.Exists(Application.dataPath + "/Mods/Scripts/OokScripts"))
                 {
                     foreach (
@@ -192,9 +199,11 @@ namespace BesiegeScriptingMod
                 {
                     Directory.CreateDirectory(Application.dataPath + "/Mods/Scripts/OokScripts");
                 }
+
                 #endregion
 
                 #region CSharp
+
                 if (Directory.Exists(Application.dataPath + "/Mods/Scripts/CSharpScripts"))
                 {
                     var dii = new DirectoryInfo(Application.dataPath + "/Mods/Scripts/CSharpScripts");
@@ -220,9 +229,11 @@ namespace BesiegeScriptingMod
                 {
                     Directory.CreateDirectory(Application.dataPath + "/Mods/Scripts/CSharpScripts");
                 }
+
                 #endregion
 
                 #region Chef
+
                 if (Directory.Exists(Application.dataPath + "/Mods/Scripts/ChefScripts"))
                 {
                     foreach (
@@ -249,9 +260,11 @@ namespace BesiegeScriptingMod
                 {
                     Directory.CreateDirectory(Application.dataPath + "/Mods/Scripts/ChefScripts");
                 }
+
                 #endregion
 
                 #region JavaScript
+
                 if (Directory.Exists(Application.dataPath + "/Mods/Scripts/JavaScriptScripts"))
                 {
                     foreach (
@@ -278,6 +291,7 @@ namespace BesiegeScriptingMod
                 {
                     Directory.CreateDirectory(Application.dataPath + "/Mods/Scripts/JavaScriptScripts");
                 }
+
                 #endregion
             }
             UpdateSauce();
@@ -340,7 +354,7 @@ namespace BesiegeScriptingMod
                 _defaultLabel = new GUIStyle(GUI.skin.label)
                 {
                     fontSize = 24,
-                    normal = new GUIStyleState() { background = background, textColor = Color.white }
+                    normal = new GUIStyleState() {background = background, textColor = Color.white}
                 };
                 GUILayout.Window(_helpId, new Rect(Input.mousePosition.x, Screen.height - Input.mousePosition.y + 10.0f, 100.0f, 50.0f), HelpFunc, "ToolTip");
             }
@@ -408,9 +422,10 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 }
             }
 
-            #endregion 
+                #endregion 
 
             #region IDE
+
             else if (_ideSelection)
             {
                 _showGoOptions = false;
@@ -487,6 +502,10 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     ook = false;
                     Ide = "";
                 }
+                if (!cs && !py && !js && !lua && !bf && !ook)
+                {
+                    Ide = "";
+                }
                 if (!_lastIde.Equals(Ide))
                 {
                     UpdateSauce();
@@ -503,6 +522,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 }
                 */
             }
+
             #endregion
 
             GUILayout.EndHorizontal();
@@ -539,7 +559,8 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
             //var last = _isSaving;
             //_isSaving = GUILayout.Toggle(_isSaving, "Save", GUI.skin.button);
 
-            _stopScript = GUILayout.Toggle(_stopScript, new GUIContent("Stop Script", "Shows you a list of running Scripts. If you press the Left Mousebutton while hovering over one, it will be destroyed"), _toggleStyle);
+            _stopScript = GUILayout.Toggle(_stopScript,
+                new GUIContent("Stop Script", "Shows you a list of running Scripts. If you press the Left Mousebutton while hovering over one, it will be destroyed"), _toggleStyle);
             if (_stopScript)
             {
                 _isLoading = false;
@@ -557,17 +578,14 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 _chooseObject = false;
                 _showObjects = false;
             }
-
-            if (!Ide.Equals("Lua"))
+            _addingRefs = GUILayout.Toggle(_addingRefs, new GUIContent("Add references", "Let's you define the libraries you are using in your Script. The most common ones are predefined"),
+                _toggleStyle);
+            if (_addingRefs)
             {
-                _addingRefs = GUILayout.Toggle(_addingRefs, new GUIContent("Add references", "Let's you define the libraries you are using in your Script. The most common ones are predefined"), _toggleStyle);
-                if (_addingRefs)
-                {
-                    _isLoading = false;
-                    _chooseObject = false;
-                    _stopScript = false;
-                    _showObjects = false;
-                }
+                _isLoading = false;
+                _chooseObject = false;
+                _stopScript = false;
+                _showObjects = false;
             }
 
             _isOpen = GUILayout.Toggle(_isOpen, new GUIContent("Open/Close Editor", "Opens/Closes the whole editor window"), _toggleStyle);
@@ -575,7 +593,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
 
             GUILayout.EndHorizontal();
 
-            #endregion 
+            #endregion
 
             #endregion
 
@@ -735,6 +753,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
             else if (_isLoading)
             {
                 _scrollPos = GUILayout.BeginScrollView(_scrollPos);
+                List<String> toRemove = new List<string>();
                 switch (Ide)
                 {
                     case "CSharp":
@@ -743,10 +762,20 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
+                                if (Event.current.keyCode == KeyCode.Mouse1)
+                                {
+                                    File.Delete(cSharpScript.Value.sourceFile);
+                                    File.Delete(cSharpScript.Value.refFile);
+                                    toRemove.Add(cSharpScript.Key);
+                                }
                                 Loadtion(cSharpScript);
                             }
                         }
-                        break;
+                            foreach (string s in toRemove)
+                            {
+                                CSharpScripts.Remove(s);
+                            }
+                            break;
                     }
                     case "Lua":
                     {
@@ -754,10 +783,20 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                Loadtion(cSharpScript);
+                                    if (Event.current.keyCode == KeyCode.Mouse1)
+                                    {
+                                        File.Delete(cSharpScript.Value.sourceFile);
+                                        File.Delete(cSharpScript.Value.refFile);
+                                        toRemove.Add(cSharpScript.Key);
+                                    }
+                                    Loadtion(cSharpScript);
                             }
                         }
-                        break;
+                            foreach (string s in toRemove)
+                            {
+                                LuaScripts.Remove(s);
+                            }
+                            break;
                     }
                     case "Python":
                     {
@@ -765,10 +804,20 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                Loadtion(cSharpScript);
+                                    if (Event.current.keyCode == KeyCode.Mouse1)
+                                    {
+                                        File.Delete(cSharpScript.Value.sourceFile);
+                                        File.Delete(cSharpScript.Value.refFile);
+                                        toRemove.Add(cSharpScript.Key);
+                                    }
+                                    Loadtion(cSharpScript);
                             }
                         }
-                        break;
+                            foreach (string s in toRemove)
+                            {
+                                PythonScripts.Remove(s);
+                            }
+                            break;
                     }
                     case "JavaScript":
                     {
@@ -776,10 +825,20 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                Loadtion(cSharpScript);
+                                    if (Event.current.keyCode == KeyCode.Mouse1)
+                                    {
+                                        File.Delete(cSharpScript.Value.sourceFile);
+                                        File.Delete(cSharpScript.Value.refFile);
+                                        toRemove.Add(cSharpScript.Key);
+                                    }
+                                    Loadtion(cSharpScript);
                             }
                         }
-                        break;
+                            foreach (string s in toRemove)
+                            {
+                                JavaScriptScripts.Remove(s);
+                            }
+                            break;
                     }
                     case "Brainfuck":
                     {
@@ -787,10 +846,20 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                Loadtion(cSharpScript);
+                                    if (Event.current.keyCode == KeyCode.Mouse1)
+                                    {
+                                        File.Delete(cSharpScript.Value.sourceFile);
+                                        File.Delete(cSharpScript.Value.refFile);
+                                        toRemove.Add(cSharpScript.Key);
+                                    }
+                                    Loadtion(cSharpScript);
                             }
                         }
-                        break;
+                            foreach (string s in toRemove)
+                            {
+                                BrainfuckScripts.Remove(s);
+                            }
+                            break;
                     }
                     case "Chef":
                     {
@@ -798,10 +867,20 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                Loadtion(cSharpScript);
+                                    if (Event.current.keyCode == KeyCode.Mouse1)
+                                    {
+                                        File.Delete(cSharpScript.Value.sourceFile);
+                                        File.Delete(cSharpScript.Value.refFile);
+                                        toRemove.Add(cSharpScript.Key);
+                                    }
+                                    Loadtion(cSharpScript);
                             }
                         }
-                        break;
+                            foreach (string s in toRemove)
+                            {
+                                ChefScripts.Remove(s);
+                            }
+                            break;
                     }
                     case "Ook":
                     {
@@ -809,8 +888,18 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                Loadtion(cSharpScript);
+                                    if (Event.current.keyCode == KeyCode.Mouse1)
+                                    {
+                                        File.Delete(cSharpScript.Value.sourceFile);
+                                        File.Delete(cSharpScript.Value.refFile);
+                                        toRemove.Add(cSharpScript.Key);
+                                    }
+                                    Loadtion(cSharpScript);
                             }
+                        }
+                        foreach (string s in toRemove)
+                        {
+                            OokScripts.Remove(s);
                         }
                         break;
                     }
@@ -872,10 +961,10 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         }
                         GameObject go = current.gameObject;
                         _gos.Clear();
-                            _gos.Add(go,
-                                go.GetComponent<Renderer>()
-                                    ? go.GetComponent<Renderer>().material.color
-                                    : Color.clear);
+                        _gos.Add(go,
+                            go.GetComponent<Renderer>()
+                                ? go.GetComponent<Renderer>().material.color
+                                : Color.clear);
                     }
                 }
             }
@@ -1030,10 +1119,10 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     {
                         if (go != null)
                         {
-                            go.AddComponent<PythonBehaviour>();
-                            var python = go.GetComponent<PythonBehaviour>();
-                            python.SourceCodening(_sauce, Util.splitStringAtNewline(_refs));
-                            python.Awakening(_name);
+                            go.AddComponent<LuaBehaviour>();
+                            var python = go.GetComponent<LuaBehaviour>();
+                            python.SourceCodening(_sauce);
+                            python.Awakening();
                             AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
                         }
                     }
@@ -1423,9 +1512,12 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 _sauce = tr.ReadToEnd();
                 _name = script.Key;
             }
-            using (TextReader trr = new FileInfo(script.Value.refFile).OpenText())
+            if (!String.IsNullOrEmpty(script.Value.refFile))
             {
-                _refs = trr.ReadToEnd();
+                using (TextReader trr = new FileInfo(script.Value.refFile).OpenText())
+                {
+                    _refs = trr.ReadToEnd();
+                }
             }
         }
 
@@ -1521,6 +1613,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     break;
                 }
             }
+            _name = "";
         }
     }
 }
