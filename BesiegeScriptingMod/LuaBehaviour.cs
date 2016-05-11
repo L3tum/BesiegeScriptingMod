@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Text;
-using System.Xml;
-using System.Xml.Linq;
 using NLua;
 using UnityEngine;
 
@@ -20,6 +16,8 @@ namespace BesiegeScriptingMod
 
         public void Awakening()
         {
+            spaar.ModLoader.Game.OnSimulationToggle += GameOnOnSimulationToggle;
+            spaar.ModLoader.Game.OnLevelWon += GameOnOnLevelWon;
             env = new Lua();
             env.LoadCLRPackage();
             env["this"] = this; // Give the script access to the gameobject.
@@ -27,15 +25,8 @@ namespace BesiegeScriptingMod
             env["gameObject"] = gameObject;
             env["enabled"] = enabled;
 
-            XElement Configuration = new XElement("LuaGlobals", env.Globals.Select(s => new XElement(s.Replace(':', '-').Replace('(', '_'))));
-            using (XmlWriter xml = new XmlTextWriter(Application.dataPath + "lua.xml", Encoding.Unicode))
-            {
-                Configuration.WriteTo(xml);
-            }
-
             try
             {
-                Debug.Log(source);
                 env.DoString(source);
             }
             catch (NLua.Exceptions.LuaException e)
@@ -43,6 +34,16 @@ namespace BesiegeScriptingMod
                 Debug.LogError(FormatException(e), context: gameObject);
             }
             Call("Awake");
+        }
+
+        private void GameOnOnLevelWon()
+        {
+            Call("OnLevelWon");
+        }
+
+        private void GameOnOnSimulationToggle(bool simulating)
+        {
+            Call("OnSimulationToggle", simulating);
         }
 
         void Awake()

@@ -1,6 +1,6 @@
-import System
-import UnityEngine
-import spaar
+import ('System')
+import ('UnityEngine')
+import ('spaar')
 
 --Called immediately after initializing and every time the Script is activated again
 function Awake()

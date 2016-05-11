@@ -47,6 +47,10 @@
     <Reference Include="Assembly-CSharp">
       <HintPath>E:\Steeam\steamapps\common\Besiege\Besiege_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
+    <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>E:\Steeam\steamapps\common\Besiege\Besiege_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+    </Reference>
     <Reference Include="Assembly-UnityScript">
       <HintPath>E:\Steeam\steamapps\common\Besiege\Besiege_Data\Managed\Assembly-UnityScript.dll</HintPath>
     </Reference>

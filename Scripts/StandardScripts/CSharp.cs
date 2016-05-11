@@ -41,3 +41,13 @@ public void OnLevelWasLoaded(int level){
 public void OnDestroy(){
 
 }
+
+//Called when the player starts/stops the Simulation
+public void OnSimulationToggle(bool simulating){
+	
+}
+
+//Called when the player finished the level
+public void OnLevelWon(){
+	
+}

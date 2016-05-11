@@ -35,4 +35,11 @@ def OnLevelWasLoaded(self, level):
 #Called when the script is destroyed, e.g. when you close Besiege
 def OnDestroy(self):
   pass #Remove this when you add code to this method
+  
+#Called then the player starts or stops the Simulation
+def OnSimulationToggle(self, simulating):
+  pass #Remove this when you add code to this method
 
+#Called when the player finished the level
+def OnLevelWon(self)
+  pass #Remove this when you add code to this method

@@ -43,3 +43,13 @@ function OnDestroy(){
 	
 }
 
+//Called when the player starts or stops the Simulation
+function OnSimulationToggle(simulating : boolean){
+	
+}
+
+//Called when the player finished the level
+function OnLevelWon(){
+	
+}
+

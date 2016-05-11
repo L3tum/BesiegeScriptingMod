@@ -179,7 +179,6 @@ namespace BesiegeScriptingMod
             sauce = String.Concat(lines);
             finalSauce += imports;
             finalSauce += @"class " + name + "(MonoBehaviour):" + getNewLine() + sauce;
-            Debug.Log(finalSauce);
             return finalSauce;
         }
 

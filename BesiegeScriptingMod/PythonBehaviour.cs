@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Xml;
-using System.Xml.Linq;
-using IronPython.Runtime;
 using Microsoft.Scripting.Hosting;
 using UnityEngine;
 
@@ -41,7 +37,9 @@ namespace BesiegeScriptingMod
             scope.SetVariable("gameObject", gameObject);
             scope.SetVariable("transform", transform);
             scope.SetVariable("enabled", enabled);
-            scope.SetVariable("aus", AppDomain.CurrentDomain.GetAssemblies().First(assembly => assembly.FullName.Contains("Assembly-UnityScript")));
+            spaar.ModLoader.Game.OnSimulationToggle += GameOnOnSimulationToggle;
+            spaar.ModLoader.Game.OnLevelWon += GameOnOnLevelWon;
+
             foreach (string @ref in refs.Where(@ref => !String.IsNullOrEmpty(@ref)))
             {
                 try
@@ -83,17 +81,21 @@ namespace BesiegeScriptingMod
                     Debug.LogException(ex);
                 }
             }
-            XElement Configuration = new XElement("LuaGlobals",
-                engine.Runtime.Globals.GetItems().Where(pair => pair.Key != null && pair.Value != null).Select(pair => new XElement(pair.Key.Replace(':', '-').Replace('(', '_'), pair.Value)));
-            using (XmlWriter xml = new XmlTextWriter(Application.dataPath + "python.xml", Encoding.Unicode))
-            {
-                Configuration.WriteTo(xml);
-            }
             ScriptSource source = engine.CreateScriptSourceFromString(sauce);
             code = source.Compile();
             code.Execute(scope);
             pythonClass = engine.Operations.Invoke(scope.GetVariable(classname));
             CallMethod("Awake");
+        }
+
+        private void GameOnOnLevelWon()
+        {
+            CallMethod("OnLevelWon");
+        }
+
+        private void GameOnOnSimulationToggle(bool simulating)
+        {
+            CallMethod("OnSimulationToggle", simulating);
         }
 
         public void Awake()

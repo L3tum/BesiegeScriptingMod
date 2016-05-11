@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using spaar.ModLoader;
 using spaar.ModLoader.UI;
 using UnityEngine;
@@ -533,28 +534,33 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
 
             GUILayout.BeginHorizontal(GUI.skin.box);
 
-            #region Execute
-
-            if (GUILayout.Button(new GUIContent("Execute", "Execute your Script. It will be attached to every selected GameObject")))
+            if (Ide != "")
             {
-                Execution();
-            }
 
-            #endregion Execute
+                #region Execute
 
-            #region Convert
-
-            if (!Ide.Equals("CSharp") && !Ide.Equals("Lua") && !Ide.Equals("Python") && !Ide.Equals("Chef") &&
-                !Ide.Equals("Java"))
-            {
-                if (GUILayout.Button(new GUIContent("Convert", "Convert your Source Code into C# code. This is necessary in order to execute it")))
+                if (GUILayout.Button(new GUIContent("Execute", "Execute your Script. It will be attached to every selected GameObject")))
                 {
-                    Convertion();
+                    Execution();
                 }
-                _displayC = GUILayout.Toggle(_displayC, new GUIContent("Display C# Source", "You can either display your original source, or the converted source"), _toggleStyle);
-            }
 
-            #endregion
+                #endregion Execute
+
+                #region Convert
+
+                if (!Ide.Equals("CSharp") && !Ide.Equals("Lua") && !Ide.Equals("Python") && !Ide.Equals("Chef") &&
+                    !Ide.Equals("Java"))
+                {
+                    if (GUILayout.Button(new GUIContent("Convert", "Convert your Source Code into C# code. This is necessary in order to execute it")))
+                    {
+                        Convertion();
+                    }
+                    _displayC = GUILayout.Toggle(_displayC, new GUIContent("Display C# Source", "You can either display your original source, or the converted source"), _toggleStyle);
+                }
+
+                #endregion
+
+            }
 
             //var last = _isSaving;
             //_isSaving = GUILayout.Toggle(_isSaving, "Save", GUI.skin.button);
@@ -578,14 +584,20 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 _chooseObject = false;
                 _showObjects = false;
             }
-            _addingRefs = GUILayout.Toggle(_addingRefs, new GUIContent("Add references", "Let's you define the libraries you are using in your Script. The most common ones are predefined"),
-                _toggleStyle);
-            if (_addingRefs)
+
+            if (Ide != "")
             {
-                _isLoading = false;
-                _chooseObject = false;
-                _stopScript = false;
-                _showObjects = false;
+
+                _addingRefs = GUILayout.Toggle(_addingRefs, new GUIContent("Add references", "Let's you define the libraries you are using in your Script. The most common ones are predefined"),
+                    _toggleStyle);
+                if (_addingRefs)
+                {
+                    _isLoading = false;
+                    _chooseObject = false;
+                    _stopScript = false;
+                    _showObjects = false;
+                }
+
             }
 
             _isOpen = GUILayout.Toggle(_isOpen, new GUIContent("Open/Close Editor", "Opens/Closes the whole editor window"), _toggleStyle);
@@ -762,13 +774,16 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                if (Event.current.keyCode == KeyCode.Mouse1)
+                                if (Event.current.button == 1)
                                 {
                                     File.Delete(cSharpScript.Value.sourceFile);
                                     File.Delete(cSharpScript.Value.refFile);
                                     toRemove.Add(cSharpScript.Key);
                                 }
-                                Loadtion(cSharpScript);
+                                else
+                                {
+                                    Loadtion(cSharpScript);
+                                }
                             }
                         }
                             foreach (string s in toRemove)
@@ -783,14 +798,17 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                    if (Event.current.keyCode == KeyCode.Mouse1)
+                                    if (Event.current.button == 1)
                                     {
                                         File.Delete(cSharpScript.Value.sourceFile);
                                         File.Delete(cSharpScript.Value.refFile);
                                         toRemove.Add(cSharpScript.Key);
                                     }
-                                    Loadtion(cSharpScript);
-                            }
+                                    else
+                                    {
+                                        Loadtion(cSharpScript);
+                                    }
+                                }
                         }
                             foreach (string s in toRemove)
                             {
@@ -804,13 +822,16 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                    if (Event.current.keyCode == KeyCode.Mouse1)
+                                    if (Event.current.button == 1)
                                     {
                                         File.Delete(cSharpScript.Value.sourceFile);
                                         File.Delete(cSharpScript.Value.refFile);
                                         toRemove.Add(cSharpScript.Key);
                                     }
-                                    Loadtion(cSharpScript);
+                                    else
+                                    {
+                                        Loadtion(cSharpScript);
+                                    };
                             }
                         }
                             foreach (string s in toRemove)
@@ -825,14 +846,17 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                    if (Event.current.keyCode == KeyCode.Mouse1)
+                                    if (Event.current.button == 1)
                                     {
                                         File.Delete(cSharpScript.Value.sourceFile);
                                         File.Delete(cSharpScript.Value.refFile);
                                         toRemove.Add(cSharpScript.Key);
                                     }
-                                    Loadtion(cSharpScript);
-                            }
+                                    else
+                                    {
+                                        Loadtion(cSharpScript);
+                                    }
+                                }
                         }
                             foreach (string s in toRemove)
                             {
@@ -846,14 +870,17 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                    if (Event.current.keyCode == KeyCode.Mouse1)
+                                    if (Event.current.button == 1)
                                     {
                                         File.Delete(cSharpScript.Value.sourceFile);
                                         File.Delete(cSharpScript.Value.refFile);
                                         toRemove.Add(cSharpScript.Key);
                                     }
-                                    Loadtion(cSharpScript);
-                            }
+                                    else
+                                    {
+                                        Loadtion(cSharpScript);
+                                    }
+                                }
                         }
                             foreach (string s in toRemove)
                             {
@@ -867,14 +894,17 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                    if (Event.current.keyCode == KeyCode.Mouse1)
+                                    if (Event.current.button == 1)
                                     {
                                         File.Delete(cSharpScript.Value.sourceFile);
                                         File.Delete(cSharpScript.Value.refFile);
                                         toRemove.Add(cSharpScript.Key);
                                     }
-                                    Loadtion(cSharpScript);
-                            }
+                                    else
+                                    {
+                                        Loadtion(cSharpScript);
+                                    }
+                                }
                         }
                             foreach (string s in toRemove)
                             {
@@ -888,14 +918,17 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                    if (Event.current.keyCode == KeyCode.Mouse1)
+                                    if (Event.current.button == 1)
                                     {
                                         File.Delete(cSharpScript.Value.sourceFile);
                                         File.Delete(cSharpScript.Value.refFile);
                                         toRemove.Add(cSharpScript.Key);
                                     }
-                                    Loadtion(cSharpScript);
-                            }
+                                    else
+                                    {
+                                        Loadtion(cSharpScript);
+                                    }
+                                }
                         }
                         foreach (string s in toRemove)
                         {
@@ -1014,9 +1047,10 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
 
         public void Execution()
         {
-            if (_name.Equals(""))
+            if (Regex.Matches(_name, @"[a-zA-Z]").Count == 0)
             {
                 Debug.LogError("No name specified!");
+                return;
             }
             if (AddedScripts.Count > 0)
             {

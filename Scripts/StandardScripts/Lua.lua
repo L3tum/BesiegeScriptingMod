@@ -33,11 +33,21 @@ function FixedUpdate()
 end
 
 --Called when a level was loaded
-function OnLevelWasLoaded(int level)
+function OnLevelWasLoaded(level)
 
 end
 
 --Called when the script is destroyed, e.g. when you close Besiege
 function OnDestroy()
+
+end
+
+--Called when the player starts or stops the Simulation
+function OnSimulationToggle(simulating)
+
+end
+
+--Called when the player finished the level
+function OnLevelWon()
 
 end
