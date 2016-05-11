@@ -1643,7 +1643,9 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                              Util.getNewLine() +
                              "<size=16>8. <color=#ffa500ff>Display C# Source</color> will let you switch between your original Source Code and the converted one. Only available for <color=#ffa500ff>Brainfuck</color>, <color=#ffa500ff>Ook</color> and <color=#ffa500ff>UnityScript</color></size>" +
                              Util.getNewLine() +
-                             "<size=14><i>Additionally, if you want to resize the window, you can enter ScaleX [value] or ScaleY[value] into the console</i></size>";
+                             "<size=14><i>Additionally, if you want to resize the window, you can enter ScaleX [value] or ScaleY[value] into the console</i></size>" + Util.getNewLine() +
+                             "<size=14><i>Deleting a Script is done by right clicking it in the 'Load' screen</i></size>";
+
                     break;
                 }
             }
