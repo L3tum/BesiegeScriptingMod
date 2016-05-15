@@ -562,6 +562,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 if (!_lastIde.Equals(Ide))
                 {
                     UpdateSauce();
+                    _cSauce = "";
                     _displayC = false;
                     _ideSelection = false;
                 }
@@ -601,7 +602,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 #region Convert
 
                 if (!Ide.Equals("CSharp") && !Ide.Equals("Lua") && !Ide.Equals("Python") && !Ide.Equals("Chef") &&
-                    !Ide.Equals("Java") && !Ide.Equals("TrumpScript"))
+                    !Ide.Equals("Java"))
                 {
                     if (GUILayout.Button(new GUIContent("Convert", "Convert your Source Code into C# code. This is necessary in order to execute it")))
                     {
@@ -1546,56 +1547,57 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
 
                 case "TrumpScript":
                 {
-                    var reffs = Util.splitStringAtNewline(_refs);
-                    String convertedSauce = new TrumpScript.TrumpScript().Convert(_sauce);
-                    String finalSauce = Util.getMethodsWithClass(convertedSauce, _name, reffs);
-                    TextWriter tw =
-                        new StreamWriter(Application.dataPath + "/Mods/Scripts/TrumpScripts/" + _name + ".ts",
-                            false);
-                    tw.Write(_sauce);
-                    tw.Close();
-                    TextWriter tt = new StreamWriter(Application.dataPath + "/Mods/Scripts/temp.cs");
-                    tt.Write(finalSauce);
-                    tt.Close();
-                    TextWriter t =
-                        new StreamWriter(Application.dataPath + "/Mods/Scripts/TrumpScripts/" + _name + ".ref",
-                            false);
-                    t.Write(_refs);
-                    t.Close();
+                    if (!_cSauce.Equals(""))
+                    {
+                        var reffs = Util.splitStringAtNewline(_refs);
+                        String finalSauce = Util.getMethodsWithClass(_cSauce, _name, reffs);
+                        TextWriter tw =
+                            new StreamWriter(Application.dataPath + "/Mods/Scripts/TrumpScripts/" + _name + ".ts",
+                                false);
+                        tw.Write(_sauce);
+                        tw.Close();
+                        TextWriter tt = new StreamWriter(Application.dataPath + "/Mods/Scripts/temp.cs");
+                        tt.Write(finalSauce);
+                        tt.Close();
+                        TextWriter t =
+                            new StreamWriter(Application.dataPath + "/Mods/Scripts/TrumpScripts/" + _name + ".ref",
+                                false);
+                        t.Write(_refs);
+                        t.Close();
 
-                    if (!TrumpScripts.ContainsKey(_name))
-                    {
-                        TrumpScripts.Add(_name,
-                            new Script(Application.dataPath + "/Mods/Scripts/TrumpScripts/" + _name + ".ts",
-                                Application.dataPath + "/Mods/Scripts/TrumpScripts/" + _name + ".ref"));
-                    }
-                    var assInfo = Util.Compile(new FileInfo(Application.dataPath + "/Mods/Scripts/temp.cs"), reffs,
-                        _name);
-                    File.Delete(Application.dataPath + "/Mods/Scripts/temp.cs");
-                    String assinfoSauce = "";
-                    using (TextReader tr = new FileInfo(assInfo).OpenText())
-                    {
-                        assinfoSauce = tr.ReadToEnd();
-                    }
-                    Debug.Log(assinfoSauce);
-                    foreach (var go in _gos.Keys)
-                    {
-                        if (go != null)
+                        if (!TrumpScripts.ContainsKey(_name))
                         {
-                            go.AddComponent<PythonBehaviour>();
-                            var python = go.GetComponent<PythonBehaviour>();
-                            python.SourceCodening(assinfoSauce, reffs);
-                            if (!python.Awakening(_name))
+                            TrumpScripts.Add(_name,
+                                new Script(Application.dataPath + "/Mods/Scripts/TrumpScripts/" + _name + ".ts",
+                                    Application.dataPath + "/Mods/Scripts/TrumpScripts/" + _name + ".ref"));
+                        }
+                        var assInfo = Util.Compile(new FileInfo(Application.dataPath + "/Mods/Scripts/temp.cs"), reffs,
+                            _name);
+                        File.Delete(Application.dataPath + "/Mods/Scripts/temp.cs");
+                        String assinfoSauce = "";
+                        using (TextReader tr = new FileInfo(assInfo).OpenText())
+                        {
+                            assinfoSauce = tr.ReadToEnd();
+                        }
+                        foreach (var go in _gos.Keys)
+                        {
+                            if (go != null)
                             {
-                                Destroy(python);
-                            }
-                            else
-                            {
-                                AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
+                                go.AddComponent<PythonBehaviour>();
+                                var python = go.GetComponent<PythonBehaviour>();
+                                python.SourceCodening(assinfoSauce, reffs);
+                                if (!python.Awakening(_name))
+                                {
+                                    Destroy(python);
+                                }
+                                else
+                                {
+                                    AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
+                                }
                             }
                         }
+                        File.Delete(assInfo);
                     }
-                    File.Delete(assInfo);
                     break;
                 }
 
@@ -1694,6 +1696,12 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         var bfb = gameObject.AddComponent<OokAndBrainfuckBehaviour>();
                         bfb.init(_sauce, false);
                         StartCoroutine_Auto(bfb.runOok());
+                    break;
+                }
+                case "TrumpScript":
+                {
+                    _cSauce = new TrumpScript.TrumpScript().Convert(_sauce);
+                    _displayC = true;
                     break;
                 }
             }
