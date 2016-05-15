@@ -68,7 +68,7 @@ namespace BesiegeScriptingLoadingMod
 
         public override void OnUnload()
         {
-            File.Copy(str + "lua52.dll", Resource + "Plugins/x86/lua52.dll");
+            File.Delete(str + "lua52.dll");
             bsmType.GetMethod("OnUnload").Invoke(bsm, null);
         }
 

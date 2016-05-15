@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Net.Sockets;
 using UnityEngine;
+using Random = System.Random;
 
 namespace BesiegeScriptingMod
 {
@@ -26,15 +29,14 @@ namespace BesiegeScriptingMod
         private int EOF; //End Of File
 
         public String sauce = "";
-
-        public char result = ' ';
+        private Random rand;
 
         /**
             * Create the Brainfuck VM and give it the string to be interpreted.
             * @param s The string to be interpreted.
             */
 
-        public OokAndBrainfuckBehaviour(string code, bool bf)
+        public void init(string code, bool bf)
         {
             if (bf)
             {
@@ -50,27 +52,30 @@ namespace BesiegeScriptingMod
                 ookCom = Util.splitStringAtNewlineAndSpace(code);
                 EOF = ookCom.Length;
             }
+            rand = new Random(DateTime.Now.Millisecond + DateTime.Now.Second + DateTime.Now.Minute + DateTime.Now.Year + DateTime.Now.Day + DateTime.Now.Hour + DateTime.Now.Month);
         }
 
-        public IEnumerator<char> GetAsciiOfKeyDown()
+        public IEnumerator GetAsciiOfKeyDown(int mps, int key)
         {
-            while (!Input.anyKeyDown)
+            do
             {
-                
-            }
-            if (Input.inputString != "")
-            {
-                char tmp = Input.inputString[0];
-                result = tmp;
-            }
-            yield return ' ';
+                yield return null;
+            } while (!Input.anyKeyDown);
+            mem[mps] = Input.inputString[0];
+        }
+
+        public void Done()
+        {
+            GetComponent<ScriptHandler>()._cSauce = sauce;
+            GetComponent<ScriptHandler>()._displayC = true;
+            Destroy(this);
         }
 
         /**
             * Run the interpreter with its given string
             */
 
-        public void runBF()
+        public IEnumerator runBF()
         {
             while (ip < EOF)
             {
@@ -96,19 +101,8 @@ namespace BesiegeScriptingMod
                         sauce += (mem[mp]);
                         break;
                     case ',':
-                        try
-                        {
-                            result = ' ';
-                            while (result == ' ')
-                            {
-                                StartCoroutine_Auto(GetAsciiOfKeyDown());
-                            }
-                            mem[mp] = result;
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogException(e);
-                        }
+                        int key = rand.Next();
+                        yield return StartCoroutine_Auto(GetAsciiOfKeyDown(mp, key));
                         break;
                     case '[':
                         if (mem[mp] == 0)
@@ -128,11 +122,13 @@ namespace BesiegeScriptingMod
                 // increment instruction mp
                 ip++;
             }
+            yield return null;
+            Done();
         }
 
-        public void runOok()
+        public IEnumerator runOok()
         {
-            while (ip < EOF)
+            while (ip + 1 < EOF)
             {
                 // Get the current command
                 String c = ookCom[ip] + ookCom[ip + 1];
@@ -156,31 +152,26 @@ namespace BesiegeScriptingMod
                         sauce += (mem[mp]);
                         break;
                     case "Ook.Ook!":
-                        try
-                        {
-                            result = ' ';
-                            while (result == ' ')
-                            {
-                                StartCoroutine_Auto(GetAsciiOfKeyDown());
-                            }
-                            mem[mp] = result;
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogException(e);
-                        }
+                        int key = rand.Next();
+                        yield return StartCoroutine_Auto(GetAsciiOfKeyDown(mp, key));
                         break;
                     case "Ook!Ook?":
                         if (mem[mp] == 0)
                         {
-                            while (com[ip] != ']') ip++;
+                            while (ookCom[ip] + ookCom[ip+1] != "Ook?Ook!")
+                            { 
+                                ip++;
+                            }
                         }
                         break;
 
                     case "Ook?Ook!":
                         if (mem[mp] != 0)
                         {
-                            while (com[ip] != '[') ip--;
+                            while (ookCom[ip] + ookCom[ip+1] != "Ook!Ook?")
+                            {
+                                ip--;
+                            }
                         }
                         break;
                 }
@@ -188,6 +179,8 @@ namespace BesiegeScriptingMod
                 // increment instruction mp
                 ip += 2;
             }
+            Done();
+            yield return null;
         }
     }
 }

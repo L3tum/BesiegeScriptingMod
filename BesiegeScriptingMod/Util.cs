@@ -121,6 +121,10 @@ namespace BesiegeScriptingMod
             }
             lines = lines.Where(x => !string.IsNullOrEmpty(x) && !x.Equals("\r\n") && !x.Equals("\r") && !x.Equals("\n") && !String.IsNullOrEmpty(x.Trim())).ToArray();
             sauce = String.Concat(lines);
+            if (!usings.Contains("using UnityEngine;"))
+            {
+                usings += "using UnityEngine;" + getNewLine();
+            }
             finalSauce += usings;
             finalSauce += @"public class " + name + " : MonoBehaviour{" + getNewLine() + sauce + getNewLine() + "}";
             return finalSauce;
@@ -177,6 +181,10 @@ namespace BesiegeScriptingMod
                 }
             }
             sauce = String.Concat(lines);
+            if (!imports.Contains("from UnityEngine import *"))
+            {
+                imports += "from UnityEngine import *" + getNewLine();
+            }
             finalSauce += imports;
             finalSauce += @"class " + name + "(MonoBehaviour):" + getNewLine() + sauce;
             return finalSauce;
@@ -220,6 +228,31 @@ namespace BesiegeScriptingMod
                 return "\n";
             }
             return "\r";
+        }
+
+        /// <summary>
+        /// Gives a new line specifically for a Script. Should enable easier cross-plattform sharing of Scripts
+        /// </summary>
+        /// <param name="sauce">Source Code</param>
+        /// <returns>New-Line-Character</returns>
+        public static String getNewLineInString(String sauce)
+        {
+            if (sauce.Contains("\r\n"))
+            {
+                return "\r\n";
+            }
+            else if (sauce.Contains("\r"))
+            {
+                return "\r";
+            }
+            else if (sauce.Contains("\n"))
+            {
+                return "\n";
+            }
+            else
+            {
+                return null;
+            }
         }
 
         #region Java[OBSOLETE]

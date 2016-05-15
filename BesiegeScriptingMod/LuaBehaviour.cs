@@ -14,7 +14,7 @@ namespace BesiegeScriptingMod
             this.source = @sauce;
         }
 
-        public void Awakening()
+        public bool Awakening()
         {
             spaar.ModLoader.Game.OnSimulationToggle += GameOnOnSimulationToggle;
             spaar.ModLoader.Game.OnLevelWon += GameOnOnLevelWon;
@@ -32,8 +32,10 @@ namespace BesiegeScriptingMod
             catch (NLua.Exceptions.LuaException e)
             {
                 Debug.LogError(FormatException(e), context: gameObject);
+                return false;
             }
             Call("Awake");
+            return true;
         }
 
         private void GameOnOnLevelWon()

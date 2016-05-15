@@ -7,7 +7,7 @@ namespace BesiegeScriptingMod.TrumpScript
 {
     class Allowed
     {
-        public Dictionary<String, String> Errors = new Dictionary<string, string>()
+        public readonly Dictionary<String, String> Errors = new Dictionary<string, string>()
         {
             {"unterminated_quote", "And, believe me, if I win, if I become President, that will end. Anyone who thinks my story is near over is sadly mistaken."},
             {"nonword", "This is a country where we speak English." + Util.getNewLine() + "We have a country where to assimilate you have to speak English."},
@@ -26,6 +26,38 @@ namespace BesiegeScriptingMod.TrumpScript
 
         public List<String> vocabulary = new List<string>()
         {
+            "!",
+            ":",
+            ";",
+            ",",
+            "+",
+            "-",
+            "*",
+            "/",
+            "plus",
+            "minus",
+            "times",
+            "over",
+            "less",
+            "fewer",
+            "smaller",
+            "more", 
+            "greater",
+            "larger",
+            "now,;:",
+            "now,;",
+            "now,",
+            "Starting",
+            "Updateing",
+            "LateUpdateing",
+            "FixedUpdateing",
+            "OnGUIing",
+            "Awakeing",
+            "OnLevelWasLoadeding",
+            "OnDestroying",
+            "OnLevelWoning",
+            "OnSimulationToggleing",
+            "void",
             "hillary",
             "clinton",
             "martin",

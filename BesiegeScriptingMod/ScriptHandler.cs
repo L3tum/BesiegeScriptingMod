@@ -29,13 +29,14 @@ namespace BesiegeScriptingMod
         public readonly Dictionary<string, Script> LuaScripts = new Dictionary<string, Script>();
         public readonly Dictionary<string, Script> PythonScripts = new Dictionary<string, Script>();
         public readonly Dictionary<string, Script> OokScripts = new Dictionary<string, Script>();
+        public readonly Dictionary<string, Script> TrumpScripts = new Dictionary<string, Script>();
         private readonly Dictionary<GameObject, Color> _gos = new Dictionary<GameObject, Color>();
 
         public readonly Dictionary<Tuple<string, GameObject>, Component> AddedScripts =
             new Dictionary<Tuple<string, GameObject>, Component>();
 
-        private string _cSauce = "";
-        private bool _displayC;
+        public string _cSauce = "";
+        public bool _displayC;
         public string Ide = "";
         private string _lastIde = "";
         private bool _ideSelection;
@@ -51,6 +52,7 @@ namespace BesiegeScriptingMod
         private bool lua;
         private bool bf;
         private bool ook;
+        private bool ts;
         private string _refs;
         private string _sauce = "";
         private GUIStyle _toggleStyle;
@@ -294,6 +296,37 @@ namespace BesiegeScriptingMod
                 }
 
                 #endregion
+
+                #region TrumpScript
+
+                if (Directory.Exists(Application.dataPath + "/Mods/Scripts/TrumpScripts"))
+                {
+                    foreach (
+                        var fileInfo in
+                            di.GetDirectories().First(info => info.Name.Equals("TrumpScripts")).GetFiles())
+                    {
+                        if (fileInfo.Extension.Equals(".ts"))
+                        {
+                            if (!File.Exists(Application.dataPath + "/Mods/Scripts/TrumpScripts/" + fileInfo.Name.Replace(".ts", "") + ".ref"))
+                            {
+                                TextWriter tw = File.CreateText(Application.dataPath + "/Mods/Scripts/TrumpScripts/" + fileInfo.Name.Replace(".ts", "") + ".ref");
+                                tw.Write(_refs);
+                                tw.Close();
+                            }
+                            TrumpScripts.Add(fileInfo.Name.Replace(".ts", ""),
+                                new Script(fileInfo.FullName,
+                                    Application.dataPath + "/Mods/Scripts/TrumpScripts/" +
+                                    fileInfo.Name.Replace(".ts", "") +
+                                    ".ref"));
+                        }
+                    }
+                }
+                else
+                {
+                    Directory.CreateDirectory(Application.dataPath + "/Mods/Scripts/TrumpScripts");
+                }
+
+                #endregion
             }
             UpdateSauce();
         }
@@ -441,6 +474,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     lua = false;
                     bf = false;
                     ook = false;
+                    ts = false;
                     Ide = "CSharp";
                 }
                 py = GUILayout.Toggle(py, new GUIContent("Python", "Select Python as your language"), _toggleStyle);
@@ -451,6 +485,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     lua = false;
                     bf = false;
                     ook = false;
+                    ts = false;
                     Ide = "Python";
                 }
                 js = GUILayout.Toggle(js, new GUIContent("UnityScript", "Select UnityScript as your language"), _toggleStyle);
@@ -461,6 +496,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     lua = false;
                     bf = false;
                     ook = false;
+                    ts = false;
                     Ide = "JavaScript";
                 }
                 lua = GUILayout.Toggle(lua, new GUIContent("Lua", "Select Lua as your language"), _toggleStyle);
@@ -471,6 +507,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     js = false;
                     bf = false;
                     ook = false;
+                    ts = false;
                     Ide = "Lua";
                 }
                 bf = GUILayout.Toggle(bf, new GUIContent("Brainfuck", "Select Brainfuck as your language"), _toggleStyle);
@@ -481,6 +518,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     js = false;
                     lua = false;
                     ook = false;
+                    ts = false;
                     Ide = "Brainfuck";
                 }
                 ook = GUILayout.Toggle(ook, new GUIContent("Ook", "Select Ook as your language"), _toggleStyle);
@@ -491,7 +529,20 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     js = false;
                     lua = false;
                     bf = false;
+                    ts = false;
                     Ide = "Ook";
+                }
+                ts = GUILayout.Toggle(ts, new GUIContent("TrumpScript", "Select TrumpScript as your language"), _toggleStyle);
+                if (ts)
+                {
+                    cs = false;
+                    py = false;
+                    js = false;
+                    lua = false;
+                    bf = false;
+                    ook = false;
+                    ts = true;
+                    Ide = "TrumpScript";
                 }
                 if (GUILayout.Button(new GUIContent("Deselect", "Deselects every language and displays help message")))
                 {
@@ -501,15 +552,17 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     lua = false;
                     bf = false;
                     ook = false;
+                    ts = false;
                     Ide = "";
                 }
-                if (!cs && !py && !js && !lua && !bf && !ook)
+                if (!cs && !py && !js && !lua && !bf && !ook && !ts)
                 {
                     Ide = "";
                 }
                 if (!_lastIde.Equals(Ide))
                 {
                     UpdateSauce();
+                    _displayC = false;
                     _ideSelection = false;
                 }
                 /*
@@ -536,7 +589,6 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
 
             if (Ide != "")
             {
-
                 #region Execute
 
                 if (GUILayout.Button(new GUIContent("Execute", "Execute your Script. It will be attached to every selected GameObject")))
@@ -549,7 +601,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 #region Convert
 
                 if (!Ide.Equals("CSharp") && !Ide.Equals("Lua") && !Ide.Equals("Python") && !Ide.Equals("Chef") &&
-                    !Ide.Equals("Java"))
+                    !Ide.Equals("Java") && !Ide.Equals("TrumpScript"))
                 {
                     if (GUILayout.Button(new GUIContent("Convert", "Convert your Source Code into C# code. This is necessary in order to execute it")))
                     {
@@ -559,7 +611,6 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 }
 
                 #endregion
-
             }
 
             //var last = _isSaving;
@@ -587,7 +638,6 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
 
             if (Ide != "")
             {
-
                 _addingRefs = GUILayout.Toggle(_addingRefs, new GUIContent("Add references", "Let's you define the libraries you are using in your Script. The most common ones are predefined"),
                     _toggleStyle);
                 if (_addingRefs)
@@ -597,7 +647,6 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     _stopScript = false;
                     _showObjects = false;
                 }
-
             }
 
             _isOpen = GUILayout.Toggle(_isOpen, new GUIContent("Open/Close Editor", "Opens/Closes the whole editor window"), _toggleStyle);
@@ -786,11 +835,11 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                                 }
                             }
                         }
-                            foreach (string s in toRemove)
-                            {
-                                CSharpScripts.Remove(s);
-                            }
-                            break;
+                        foreach (string s in toRemove)
+                        {
+                            CSharpScripts.Remove(s);
+                        }
+                        break;
                     }
                     case "Lua":
                     {
@@ -798,23 +847,23 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                    if (Event.current.button == 1)
-                                    {
-                                        File.Delete(cSharpScript.Value.sourceFile);
-                                        File.Delete(cSharpScript.Value.refFile);
-                                        toRemove.Add(cSharpScript.Key);
-                                    }
-                                    else
-                                    {
-                                        Loadtion(cSharpScript);
-                                    }
+                                if (Event.current.button == 1)
+                                {
+                                    File.Delete(cSharpScript.Value.sourceFile);
+                                    File.Delete(cSharpScript.Value.refFile);
+                                    toRemove.Add(cSharpScript.Key);
                                 }
-                        }
-                            foreach (string s in toRemove)
-                            {
-                                LuaScripts.Remove(s);
+                                else
+                                {
+                                    Loadtion(cSharpScript);
+                                }
                             }
-                            break;
+                        }
+                        foreach (string s in toRemove)
+                        {
+                            LuaScripts.Remove(s);
+                        }
+                        break;
                     }
                     case "Python":
                     {
@@ -822,23 +871,24 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                    if (Event.current.button == 1)
-                                    {
-                                        File.Delete(cSharpScript.Value.sourceFile);
-                                        File.Delete(cSharpScript.Value.refFile);
-                                        toRemove.Add(cSharpScript.Key);
-                                    }
-                                    else
-                                    {
-                                        Loadtion(cSharpScript);
-                                    };
+                                if (Event.current.button == 1)
+                                {
+                                    File.Delete(cSharpScript.Value.sourceFile);
+                                    File.Delete(cSharpScript.Value.refFile);
+                                    toRemove.Add(cSharpScript.Key);
+                                }
+                                else
+                                {
+                                    Loadtion(cSharpScript);
+                                }
+                                ;
                             }
                         }
-                            foreach (string s in toRemove)
-                            {
-                                PythonScripts.Remove(s);
-                            }
-                            break;
+                        foreach (string s in toRemove)
+                        {
+                            PythonScripts.Remove(s);
+                        }
+                        break;
                     }
                     case "JavaScript":
                     {
@@ -846,23 +896,23 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                    if (Event.current.button == 1)
-                                    {
-                                        File.Delete(cSharpScript.Value.sourceFile);
-                                        File.Delete(cSharpScript.Value.refFile);
-                                        toRemove.Add(cSharpScript.Key);
-                                    }
-                                    else
-                                    {
-                                        Loadtion(cSharpScript);
-                                    }
+                                if (Event.current.button == 1)
+                                {
+                                    File.Delete(cSharpScript.Value.sourceFile);
+                                    File.Delete(cSharpScript.Value.refFile);
+                                    toRemove.Add(cSharpScript.Key);
                                 }
-                        }
-                            foreach (string s in toRemove)
-                            {
-                                JavaScriptScripts.Remove(s);
+                                else
+                                {
+                                    Loadtion(cSharpScript);
+                                }
                             }
-                            break;
+                        }
+                        foreach (string s in toRemove)
+                        {
+                            JavaScriptScripts.Remove(s);
+                        }
+                        break;
                     }
                     case "Brainfuck":
                     {
@@ -870,23 +920,23 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                    if (Event.current.button == 1)
-                                    {
-                                        File.Delete(cSharpScript.Value.sourceFile);
-                                        File.Delete(cSharpScript.Value.refFile);
-                                        toRemove.Add(cSharpScript.Key);
-                                    }
-                                    else
-                                    {
-                                        Loadtion(cSharpScript);
-                                    }
+                                if (Event.current.button == 1)
+                                {
+                                    File.Delete(cSharpScript.Value.sourceFile);
+                                    File.Delete(cSharpScript.Value.refFile);
+                                    toRemove.Add(cSharpScript.Key);
                                 }
-                        }
-                            foreach (string s in toRemove)
-                            {
-                                BrainfuckScripts.Remove(s);
+                                else
+                                {
+                                    Loadtion(cSharpScript);
+                                }
                             }
-                            break;
+                        }
+                        foreach (string s in toRemove)
+                        {
+                            BrainfuckScripts.Remove(s);
+                        }
+                        break;
                     }
                     case "Chef":
                     {
@@ -894,23 +944,23 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                    if (Event.current.button == 1)
-                                    {
-                                        File.Delete(cSharpScript.Value.sourceFile);
-                                        File.Delete(cSharpScript.Value.refFile);
-                                        toRemove.Add(cSharpScript.Key);
-                                    }
-                                    else
-                                    {
-                                        Loadtion(cSharpScript);
-                                    }
+                                if (Event.current.button == 1)
+                                {
+                                    File.Delete(cSharpScript.Value.sourceFile);
+                                    File.Delete(cSharpScript.Value.refFile);
+                                    toRemove.Add(cSharpScript.Key);
                                 }
-                        }
-                            foreach (string s in toRemove)
-                            {
-                                ChefScripts.Remove(s);
+                                else
+                                {
+                                    Loadtion(cSharpScript);
+                                }
                             }
-                            break;
+                        }
+                        foreach (string s in toRemove)
+                        {
+                            ChefScripts.Remove(s);
+                        }
+                        break;
                     }
                     case "Ook":
                     {
@@ -918,21 +968,45 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             if (GUILayout.Button(cSharpScript.Key))
                             {
-                                    if (Event.current.button == 1)
-                                    {
-                                        File.Delete(cSharpScript.Value.sourceFile);
-                                        File.Delete(cSharpScript.Value.refFile);
-                                        toRemove.Add(cSharpScript.Key);
-                                    }
-                                    else
-                                    {
-                                        Loadtion(cSharpScript);
-                                    }
+                                if (Event.current.button == 1)
+                                {
+                                    File.Delete(cSharpScript.Value.sourceFile);
+                                    File.Delete(cSharpScript.Value.refFile);
+                                    toRemove.Add(cSharpScript.Key);
                                 }
+                                else
+                                {
+                                    Loadtion(cSharpScript);
+                                }
+                            }
                         }
                         foreach (string s in toRemove)
                         {
                             OokScripts.Remove(s);
+                        }
+                        break;
+                    }
+                    case "TrumpScript":
+                    {
+                        foreach (var cSharpScript in TrumpScripts)
+                        {
+                            if (GUILayout.Button(cSharpScript.Key))
+                            {
+                                if (Event.current.button == 1)
+                                {
+                                    File.Delete(cSharpScript.Value.sourceFile);
+                                    File.Delete(cSharpScript.Value.refFile);
+                                    toRemove.Add(cSharpScript.Key);
+                                }
+                                else
+                                {
+                                    Loadtion(cSharpScript);
+                                }
+                            }
+                        }
+                        foreach (string s in toRemove)
+                        {
+                            TrumpScripts.Remove(s);
                         }
                         break;
                     }
@@ -1117,8 +1191,14 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                             go.AddComponent<PythonBehaviour>();
                             var python = go.GetComponent<PythonBehaviour>();
                             python.SourceCodening(assinfoSauce, reffs);
-                            python.Awakening(_name);
-                            AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
+                            if (!python.Awakening(_name))
+                            {
+                                Destroy(python);
+                            }
+                            else
+                            {
+                                AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
+                            }
                         }
                     }
                     File.Delete(assInfo);
@@ -1154,10 +1234,16 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         if (go != null)
                         {
                             go.AddComponent<LuaBehaviour>();
-                            var python = go.GetComponent<LuaBehaviour>();
-                            python.SourceCodening(_sauce);
-                            python.Awakening();
-                            AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
+                            var luaa = go.GetComponent<LuaBehaviour>();
+                            luaa.SourceCodening(_sauce);
+                            if (!luaa.Awakening())
+                            {
+                                Destroy(luaa);
+                            }
+                            else
+                            {
+                                AddedScripts.Add(new Tuple<string, GameObject>(_name, go), luaa);
+                            }
                         }
                     }
                     break;
@@ -1199,8 +1285,14 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                             go.AddComponent<PythonBehaviour>();
                             var python = go.GetComponent<PythonBehaviour>();
                             python.SourceCodening(finalSauce, reffs);
-                            python.Awakening(_name);
-                            AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
+                            if (!python.Awakening(_name))
+                            {
+                                Destroy(python);
+                            }
+                            else
+                            {
+                                AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
+                            }
                         }
                     }
                     break;
@@ -1235,27 +1327,21 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                                     Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + _name + ".js",
                                     Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + _name + ".ref"));
                         }
-
-                        if (File.Exists(Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + _name + ".dll"))
-                        {
-                            File.Delete(Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + _name + ".dll");
-                        }
                         var reffs = Util.splitStringAtNewline(_refs);
                         String finalSauce = Util.getMethodsWithClass(_cSauce, _name, reffs);
-                        TextWriter ts =
+                        TextWriter streamWriter =
                             new StreamWriter(
-                                Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + _name + ".cs",
-                                false);
-                        tw.Write(finalSauce);
-                        tw.Close();
-
-                        File.Delete(Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + _name + ".cs");
+                                Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + _name + ".cs", false);
+                        streamWriter.Write(finalSauce);
+                        streamWriter.Close();
 
                         var assInfo =
                             Util.Compile(
                                 new FileInfo(Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + _name +
                                              ".cs"),
                                 reffs, _name);
+
+                        File.Delete(Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + _name + ".cs");
                         String assinfoSauce = "";
                         using (TextReader tr = new FileInfo(assInfo).OpenText())
                         {
@@ -1268,8 +1354,14 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                                 go.AddComponent<PythonBehaviour>();
                                 var python = go.GetComponent<PythonBehaviour>();
                                 python.SourceCodening(assinfoSauce, reffs);
-                                python.Awakening(_name);
-                                AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
+                                if (!python.Awakening(_name))
+                                {
+                                    Destroy(python);
+                                }
+                                else
+                                {
+                                    AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
+                                }
                             }
                         }
                         File.Delete(assInfo);
@@ -1309,12 +1401,12 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         }
                         var reffs = Util.splitStringAtNewline(_refs);
                         String finalSauce = Util.getMethodsWithClass(_cSauce, _name, reffs);
-                        TextWriter ts =
+                        TextWriter streamWriter =
                             new StreamWriter(
                                 Application.dataPath + "/Mods/Scripts/BrainfuckScripts/" + _name + ".cs",
                                 false);
-                        tw.Write(finalSauce);
-                        tw.Close();
+                            streamWriter.Write(finalSauce);
+                            streamWriter.Close();
                         var assInfo =
                             Util.Compile(
                                 new FileInfo(Application.dataPath + "/Mods/Scripts/BrainfuckScripts/" + _name +
@@ -1333,8 +1425,14 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                                 go.AddComponent<PythonBehaviour>();
                                 var python = go.GetComponent<PythonBehaviour>();
                                 python.SourceCodening(assinfoSauce, reffs);
-                                python.Awakening(_name);
-                                AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
+                                if (!python.Awakening(_name))
+                                {
+                                    Destroy(python);
+                                }
+                                else
+                                {
+                                    AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
+                                }
                             }
                         }
                         File.Delete(assInfo);
@@ -1374,12 +1472,12 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         }
                         var reffs = Util.splitStringAtNewline(_refs);
                         String finalSauce = Util.getMethodsWithClass(_cSauce, _name, reffs);
-                        TextWriter ts =
+                        TextWriter streamWriter =
                             new StreamWriter(
                                 Application.dataPath + "/Mods/Scripts/OokScripts/" + _name + ".cs",
                                 false);
-                        tw.Write(finalSauce);
-                        tw.Close();
+                            streamWriter.Write(finalSauce);
+                            streamWriter.Close();
                         var assInfo =
                             Util.Compile(
                                 new FileInfo(Application.dataPath + "/Mods/Scripts/OokScripts/" + _name +
@@ -1398,8 +1496,14 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                                 go.AddComponent<PythonBehaviour>();
                                 var python = go.GetComponent<PythonBehaviour>();
                                 python.SourceCodening(assinfoSauce, reffs);
-                                python.Awakening(_name);
-                                AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
+                                if (!python.Awakening(_name))
+                                {
+                                    Destroy(python);
+                                }
+                                else
+                                {
+                                    AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
+                                }
                             }
                         }
                         File.Delete(assInfo);
@@ -1433,6 +1537,65 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                             Application.dataPath + "/Mods/Scripts/ChefScripts" + _name + ".ref"));
                     var chef =
                         new Chef.Chef(Application.dataPath + "/Mods/Scripts/ChefScripts/" + _name + ".recipe");
+                    break;
+                }
+
+                    #endregion
+
+                    #region TrumpScript
+
+                case "TrumpScript":
+                {
+                    var reffs = Util.splitStringAtNewline(_refs);
+                    String convertedSauce = new TrumpScript.TrumpScript().Convert(_sauce);
+                    String finalSauce = Util.getMethodsWithClass(convertedSauce, _name, reffs);
+                    TextWriter tw =
+                        new StreamWriter(Application.dataPath + "/Mods/Scripts/TrumpScripts/" + _name + ".ts",
+                            false);
+                    tw.Write(_sauce);
+                    tw.Close();
+                    TextWriter tt = new StreamWriter(Application.dataPath + "/Mods/Scripts/temp.cs");
+                    tt.Write(finalSauce);
+                    tt.Close();
+                    TextWriter t =
+                        new StreamWriter(Application.dataPath + "/Mods/Scripts/TrumpScripts/" + _name + ".ref",
+                            false);
+                    t.Write(_refs);
+                    t.Close();
+
+                    if (!TrumpScripts.ContainsKey(_name))
+                    {
+                        TrumpScripts.Add(_name,
+                            new Script(Application.dataPath + "/Mods/Scripts/TrumpScripts/" + _name + ".ts",
+                                Application.dataPath + "/Mods/Scripts/TrumpScripts/" + _name + ".ref"));
+                    }
+                    var assInfo = Util.Compile(new FileInfo(Application.dataPath + "/Mods/Scripts/temp.cs"), reffs,
+                        _name);
+                    File.Delete(Application.dataPath + "/Mods/Scripts/temp.cs");
+                    String assinfoSauce = "";
+                    using (TextReader tr = new FileInfo(assInfo).OpenText())
+                    {
+                        assinfoSauce = tr.ReadToEnd();
+                    }
+                    Debug.Log(assinfoSauce);
+                    foreach (var go in _gos.Keys)
+                    {
+                        if (go != null)
+                        {
+                            go.AddComponent<PythonBehaviour>();
+                            var python = go.GetComponent<PythonBehaviour>();
+                            python.SourceCodening(assinfoSauce, reffs);
+                            if (!python.Awakening(_name))
+                            {
+                                Destroy(python);
+                            }
+                            else
+                            {
+                                AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
+                            }
+                        }
+                    }
+                    File.Delete(assInfo);
                     break;
                 }
 
@@ -1521,18 +1684,16 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 }
                 case "Brainfuck":
                 {
-                    var bfb = new OokAndBrainfuckBehaviour(_sauce, true);
-                    bfb.runBF();
-                    _cSauce = bfb.sauce;
-                    _displayC = true;
+                    var bfb = gameObject.AddComponent<OokAndBrainfuckBehaviour>();
+                    bfb.init(_sauce, true);
+                    StartCoroutine_Auto(bfb.runBF());
                     break;
                 }
                 case "Ook":
                 {
-                    var bfb = new OokAndBrainfuckBehaviour(_sauce, false);
-                    bfb.runOok();
-                    _cSauce = bfb.sauce;
-                    _displayC = true;
+                        var bfb = gameObject.AddComponent<OokAndBrainfuckBehaviour>();
+                        bfb.init(_sauce, false);
+                        StartCoroutine_Auto(bfb.runOok());
                     break;
                 }
             }
@@ -1614,6 +1775,16 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     using (
                         TextReader tr =
                             new StreamReader(Application.dataPath + "/Mods/Scripts/StandardScripts/Ook.ook"))
+                    {
+                        _sauce = tr.ReadToEnd();
+                    }
+                    break;
+                }
+                case "TrumpScript":
+                {
+                    using (
+                        TextReader tr =
+                            new StreamReader(Application.dataPath + "/Mods/Scripts/StandardScripts/TrumpScript.ts"))
                     {
                         _sauce = tr.ReadToEnd();
                     }

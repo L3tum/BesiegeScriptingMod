@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using UnityEngine;
 
@@ -30,7 +31,7 @@ namespace BesiegeScriptingMod
         /// Starts the $PythonBehaviour
         /// </summary>
         /// <param name="classname">Name of the Script</param>
-        public void Awakening(String classname)
+        public bool Awakening(String classname)
         {
             scope = engine.CreateScope();
             scope.SetVariable("this", this);
@@ -79,13 +80,21 @@ namespace BesiegeScriptingMod
                 catch (Exception ex)
                 {
                     Debug.LogException(ex);
+                    return false;
                 }
             }
             ScriptSource source = engine.CreateScriptSourceFromString(sauce);
-            code = source.Compile();
+            ErrorListener error = new ErrorSinkProxyListener(ErrorSink.Default);
+            code = source.Compile(error);
+            if (code == null)
+            {
+                Debug.LogError(error);
+                return false;
+            }
             code.Execute(scope);
             pythonClass = engine.Operations.Invoke(scope.GetVariable(classname));
             CallMethod("Awake");
+            return true;
         }
 
         private void GameOnOnLevelWon()
