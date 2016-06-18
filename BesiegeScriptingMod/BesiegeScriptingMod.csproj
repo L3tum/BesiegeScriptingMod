@@ -111,6 +111,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BesiegeScriptingMod.cs" />
+    <Compile Include="Language.cs" />
     <Compile Include="OokAndBrainfuckBehaviour.cs" />
     <Compile Include="Chef\Chef.cs" />
     <Compile Include="Chef\ChefException.cs" />

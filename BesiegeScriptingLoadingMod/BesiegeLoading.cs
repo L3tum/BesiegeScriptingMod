@@ -77,5 +77,6 @@ namespace BesiegeScriptingLoadingMod
         public override string Author => "JadedMortimer aka. Letum";
         public override Version Version => new Version(0, 1, 1);
         public override bool CanBeUnloaded => true;
+        public override bool Preload => true;
     }
 }

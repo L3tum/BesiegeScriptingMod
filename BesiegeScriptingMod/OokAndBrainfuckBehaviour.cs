@@ -9,6 +9,8 @@ namespace BesiegeScriptingMod
 {
     class OokAndBrainfuckBehaviour : MonoBehaviour
     {
+        private readonly int _popupId = spaar.ModLoader.Util.GetWindowID();
+        Rect _winRect = new Rect(Screen.width/2.0f -50.0f, Screen.height/2.0f - 50.0f, 100.0f, 100.0f);
         // Instance info.
         // Instance of Brainfuck interpreter, actually handles interpreting.
 
@@ -29,7 +31,8 @@ namespace BesiegeScriptingMod
         private int EOF; //End Of File
 
         public String sauce = "";
-        private Random rand;
+        private Random _rand;
+        private bool _awaiting;
 
         /**
             * Create the Brainfuck VM and give it the string to be interpreted.
@@ -52,16 +55,37 @@ namespace BesiegeScriptingMod
                 ookCom = Util.splitStringAtNewlineAndSpace(code);
                 EOF = ookCom.Length;
             }
-            rand = new Random(DateTime.Now.Millisecond + DateTime.Now.Second + DateTime.Now.Minute + DateTime.Now.Year + DateTime.Now.Day + DateTime.Now.Hour + DateTime.Now.Month);
+            _rand = new Random(DateTime.Now.Millisecond + DateTime.Now.Second + DateTime.Now.Minute + DateTime.Now.Year + DateTime.Now.Day + DateTime.Now.Hour + DateTime.Now.Month);
+        }
+
+        public void OnGUI()
+        {
+            if (_awaiting)
+            {
+               _winRect = GUI.Window(_popupId, _winRect, Func, "Popup");
+            }
+        }
+
+        private void Func(int id)
+        {
+            GUILayout.Label("Awaiting input...");
+            if (Input.anyKeyDown && Input.inputString.Length > 0)
+            {
+                GUILayout.Label(Input.inputString[0].ToString());
+            }
+            GUI.DragWindow();
         }
 
         public IEnumerator GetAsciiOfKeyDown(int mps, int key)
         {
+            _awaiting = true;
             do
             {
                 yield return null;
-            } while (!Input.anyKeyDown);
+            } while (!Input.anyKeyDown || Input.inputString.Length < 1);
+            Debug.Log(Input.inputString[0]);
             mem[mps] = Input.inputString[0];
+            _awaiting = false;
         }
 
         public void Done()
@@ -101,7 +125,7 @@ namespace BesiegeScriptingMod
                         sauce += (mem[mp]);
                         break;
                     case ',':
-                        int key = rand.Next();
+                        int key = _rand.Next();
                         yield return StartCoroutine_Auto(GetAsciiOfKeyDown(mp, key));
                         break;
                     case '[':
@@ -152,7 +176,7 @@ namespace BesiegeScriptingMod
                         sauce += (mem[mp]);
                         break;
                     case "Ook.Ook!":
-                        int key = rand.Next();
+                        int key = _rand.Next();
                         yield return StartCoroutine_Auto(GetAsciiOfKeyDown(mp, key));
                         break;
                     case "Ook!Ook?":
