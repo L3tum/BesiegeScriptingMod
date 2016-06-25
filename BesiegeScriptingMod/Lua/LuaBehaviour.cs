@@ -2,12 +2,12 @@
 using NLua;
 using UnityEngine;
 
-namespace BesiegeScriptingMod
+namespace BesiegeScriptingMod.Lua
 {
     public class LuaBehaviour : MonoBehaviour
     {
         String source;
-        Lua env;
+        NLua.Lua env;
 
         public void SourceCodening(String sauce)
         {
@@ -18,7 +18,7 @@ namespace BesiegeScriptingMod
         {
             spaar.ModLoader.Game.OnSimulationToggle += GameOnOnSimulationToggle;
             spaar.ModLoader.Game.OnLevelWon += GameOnOnLevelWon;
-            env = new Lua();
+            env = new NLua.Lua();
             env.LoadCLRPackage();
             env["this"] = this; // Give the script access to the gameobject.
             env["transform"] = transform;

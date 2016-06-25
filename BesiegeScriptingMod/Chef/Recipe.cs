@@ -27,7 +27,7 @@ namespace BesiegeScriptingMod.Chef
                 ();
             TextReader scanner = new StreamReader(ingredients);
             String s = ingredients;
-            int numLines = s.Length - s.Replace(Util.getNewLine(), string.Empty).Length;
+            int numLines = s.Length - s.Replace(Util.Util.getNewLine(), string.Empty).Length;
             int i = 0;
             scanner.ReadLine();
             i++;

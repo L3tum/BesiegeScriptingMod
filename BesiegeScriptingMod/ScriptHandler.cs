@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
+using BesiegeScriptingMod.Extensions;
+using BesiegeScriptingMod.Util;
 using spaar.ModLoader;
 using spaar.ModLoader.UI;
 using UnityEngine;
@@ -18,8 +21,6 @@ namespace BesiegeScriptingMod
         private readonly int _helpId = spaar.ModLoader.Util.GetWindowID();
         private Vector2 _refPos;
         private Vector2 _scrollPos = new Vector2(0, Mathf.Infinity);
-        private Vector2 _windowLoc = new Vector2(Screen.width - 1200.0f, Screen.height - 400.0f);
-        public Rect WinRect;
         private Rect _chooseRect = new Rect(0, 20.0f, 100.0f, 100.0f);
         public bool _displayC;
         private bool _addingRefs;
@@ -38,12 +39,11 @@ namespace BesiegeScriptingMod
         private string _name = "";
         private readonly Dictionary<GameObject, Color> _gos = new Dictionary<GameObject, Color>();
         private readonly Dictionary<String, Language> _languages = new Dictionary<string, Language>(); 
-        public readonly Dictionary<Tuple<string, GameObject>, Component> AddedScripts =
+        private Dictionary<Tuple<string, GameObject>, Component> AddedScripts =
             new Dictionary<Tuple<string, GameObject>, Component>();
 
         public string _cSauce = "";
         public string Ide = "";
-        private string _lastIde = "";
         private string _refs;
         private string _sauce = "";
         private Key _key;
@@ -52,16 +52,16 @@ namespace BesiegeScriptingMod
 
         public void Start()
         {
+            Settings.Load();
+            LoadLanguages();
             _gos.Add(gameObject, Color.clear);
-            _refs += Application.dataPath + "/Mods/SpaarModLoader.dll" + Util.getNewLine();
-            _refs += Application.dataPath + "/Managed/Assembly-UnityScript.dll" + Util.getNewLine();
-            _refs += Application.dataPath + "/Managed/Assembly-UnityScript-firstpass.dll" + Util.getNewLine();
-            _refs += Application.dataPath + "/Managed/Assembly-CSharp.dll" + Util.getNewLine();
-            _refs += Application.dataPath + "/Managed/Assembly-CSharp-firstpass.dll" + Util.getNewLine();
-            _refs += Application.dataPath + "/Managed/UnityEngine.dll" + Util.getNewLine();
+            _refs += Application.dataPath + "/Mods/SpaarModLoader.dll" + Util.Util.getNewLine();
+            _refs += Application.dataPath + "/Managed/Assembly-UnityScript.dll" + Util.Util.getNewLine();
+            _refs += Application.dataPath + "/Managed/Assembly-UnityScript-firstpass.dll" + Util.Util.getNewLine();
+            _refs += Application.dataPath + "/Managed/Assembly-CSharp.dll" + Util.Util.getNewLine();
+            _refs += Application.dataPath + "/Managed/Assembly-CSharp-firstpass.dll" + Util.Util.getNewLine();
+            _refs += Application.dataPath + "/Managed/UnityEngine.dll" + Util.Util.getNewLine();
             _refs += Application.dataPath + "/Managed/System.dll";
-
-            WinRect = new Rect(100.0f, 20.0f, _windowLoc.x, _windowLoc.y);
 
             _languages.Add("CSharp", new Language("CSharp", false, "cs"));
             _languages.Add("Python", new Language("Python", false, "py"));
@@ -70,13 +70,6 @@ namespace BesiegeScriptingMod
             _languages.Add("Ook", new Language("Ook", true, "ook"));
             _languages.Add("UnityScript", new Language("UnityScript", true, "us"));
             _languages.Add("TrumpScript", new Language("TrumpScript", true, "ts"));
-            
-
-            foreach (var language in _languages.Values)
-            {
-                language.InitializeScripts();
-            }
-
             UpdateSauce();
         }
 
@@ -114,7 +107,7 @@ namespace BesiegeScriptingMod
                     fontStyle = FontStyle.Bold
                 };
 
-                WinRect = GUILayout.Window(_winId, WinRect,
+                Settings.WinSize = GUILayout.Window(_winId, Settings.WinSize,
                     Func,
                     "Scripting Mod by Mortimer");
             }
@@ -142,6 +135,7 @@ namespace BesiegeScriptingMod
                 GUILayout.Window(_helpId, new Rect(Input.mousePosition.x, Screen.height - Input.mousePosition.y + 10.0f, 100.0f, 50.0f), HelpFunc, "ToolTip");
             }
         }
+
         private void HelpFunc(int id)
         {
             GUILayout.Label(_lastTooltip, _defaultLabel);
@@ -255,7 +249,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
             if (_ideSelection)
             {
                 GUILayout.BeginHorizontal(GUI.skin.box);
-                _lastIde = Ide;
+                Settings.LastIde = Ide;
                 Ide = "";
                 foreach (var value in _languages.Values)
                 {
@@ -269,7 +263,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         Ide = value.name;
                     }
                 }
-                if (!_lastIde.Equals(Ide))
+                if (!Settings.LastIde.Equals(Ide))
                 {
                     UpdateSauce();
                     _cSauce = "";
@@ -323,6 +317,14 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 else
                 {
                     _sauce = GUILayout.TextArea(_sauce);
+                    if (Ide.Equals(""))
+                    {
+                        if (GUILayout.Button(new GUIContent("Got it!", "Disables the Tutorial and selects Lua as the IDE")))
+                        {
+                            Ide = "Lua";
+                            UpdateSauce();
+                        }
+                    }
                 }
                 GUILayout.EndScrollView();
             }
@@ -570,6 +572,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
 
         public void OnUnload()
         {
+            Settings.Save();
             if (AddedScripts.Count > 0)
             {
                 List<Tuple<String, GameObject>> list = new List<Tuple<String, GameObject>>();
@@ -591,11 +594,16 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
             }
         }
 
-        public void Execution()
+        private void Execution()
         {
             if (Regex.Matches(_name, @"[a-zA-Z]").Count == 0)
             {
                 Debug.LogError("No Name specified!");
+                return;
+            }
+            if (_languages[Ide].needsConvertion && _cSauce == "")
+            {
+                Debug.LogError("Please convert your script first!");
                 return;
             }
             if (AddedScripts.Count > 0)
@@ -620,408 +628,15 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     }
                 }
             }
-            switch (Ide)
+            if(!_languages[Ide].Execute(_refs, _languages[Ide].needsConvertion ? _cSauce : _sauce, _gos.Keys.ToList(), _name, ref AddedScripts))
             {
-                    #region CSharp
+                Debug.LogError("Critical error!");
+                return;
+            }
 
-                case "CSharp":
-                {
-                    var reffs = Util.splitStringAtNewline(_refs);
-                    String finalSauce = Util.getMethodsWithClass(_sauce, _name, reffs);
-                    _languages[Ide].SaveSourceToFile(_sauce, _name);
-                    TextWriter tt = new StreamWriter(Application.dataPath + "/Mods/Scripts/temp.cs");
-                    tt.Write(finalSauce);
-                    tt.Close();
-                    TextWriter t =
-                        new StreamWriter(Application.dataPath + "/Mods/Scripts/CSharpScripts/" + _name + ".ref",
-                            false);
-                    t.Write(_refs);
-                    t.Close();
+            #region Java[OBSOLETE]
 
-                    if (!_languages[Ide].Scripts.ContainsKey(_name))
-                    {
-                            _languages[Ide].Scripts.Add(_name,
-                            new Script(Application.dataPath + "/Mods/Scripts/CSharpScripts/" + _name + ".cs",
-                                Application.dataPath + "/Mods/Scripts/CSharpScripts/" + _name + ".ref"));
-                    }
-                    var assInfo = Util.Compile(new FileInfo(Application.dataPath + "/Mods/Scripts/temp.cs"), reffs,
-                        _name);
-                    File.Delete(Application.dataPath + "/Mods/Scripts/temp.cs");
-                    foreach (var go in _gos.Keys)
-                    {
-                        if (go != null)
-                        {
-                            go.AddComponent<PythonBehaviour>();
-                            var python = go.GetComponent<PythonBehaviour>();
-                            python.SourceCodening(assInfo, reffs);
-                            if (!python.Awakening(_name))
-                            {
-                                Destroy(python);
-                            }
-                            else
-                            {
-                                AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
-                            }
-                        }
-                    }
-                    break;
-                }
-
-                    #endregion
-
-                    #region Lua
-
-                case "Lua":
-                {
-                        _languages[Ide].SaveSourceToFile(_sauce, _name);
-
-                        TextWriter t =
-                        new StreamWriter(Application.dataPath + "/Mods/Scripts/LuaScripts/" + _name + ".ref", false);
-                    t.Write(_refs);
-                    t.Close();
-
-                    if (!_languages[Ide].Scripts.ContainsKey(_name))
-                    {
-                            _languages[Ide].Scripts.Add(_name,
-                            new Script(Application.dataPath + "/Mods/Scripts/LuaScripts/" + _name + ".lua",
-                                Application.dataPath + "/Mods/Scripts/LuaScripts/" + _name + ".ref"));
-                    }
-
-                    foreach (var go in _gos.Keys)
-                    {
-                        if (go != null)
-                        {
-                            go.AddComponent<LuaBehaviour>();
-                            var luaa = go.GetComponent<LuaBehaviour>();
-                            luaa.SourceCodening(_sauce);
-                            if (!luaa.Awakening())
-                            {
-                                Destroy(luaa);
-                            }
-                            else
-                            {
-                                AddedScripts.Add(new Tuple<string, GameObject>(_name, go), luaa);
-                            }
-                        }
-                    }
-                    break;
-                }
-
-                    #endregion
-
-                    #region Python
-
-                case "Python":
-                {
-                    String[] refs = Util.splitStringAtNewline(_refs);
-                    String finalSauce = Util.getMethodsWithClassPython(_sauce, _name, refs);
-
-                        _languages[Ide].SaveSourceToFile(_sauce, _name);
-
-
-                        TextWriter t =
-                        new StreamWriter(Application.dataPath + "/Mods/Scripts/PythonScripts/" + _name + ".ref",
-                            false);
-                    t.Write(_refs);
-                    t.Close();
-
-                    if (!_languages[Ide].Scripts.ContainsKey(_name))
-                    {
-                            _languages[Ide].Scripts.Add(_name,
-                            new Script(Application.dataPath + "/Mods/Scripts/PythonScripts/" + _name + ".py",
-                                Application.dataPath + "/Mods/Scripts/PythonScripts/" + _name + ".ref"));
-                    }
-                    String[] reffs = Util.splitStringAtNewline(_refs);
-                    foreach (var go in _gos.Keys)
-                    {
-                        if (go != null)
-                        {
-                            go.AddComponent<PythonBehaviour>();
-                            var python = go.GetComponent<PythonBehaviour>();
-                            python.SourceCodening(finalSauce, reffs);
-                            if (!python.Awakening(_name))
-                            {
-                                Destroy(python);
-                            }
-                            else
-                            {
-                                AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
-                            }
-                        }
-                    }
-                    break;
-                }
-
-                    #endregion
-
-                    #region JS
-
-                case "JavaScript":
-                {
-                    if (!_cSauce.Equals(""))
-                    {
-                            _languages[Ide].SaveSourceToFile(_sauce, _name);
-
-                            TextWriter t =
-                            new StreamWriter(
-                                Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + _name + ".ref",
-                                false);
-                        t.Write(_refs);
-                        t.Close();
-
-                        if (!_languages[Ide].Scripts.ContainsKey(_name))
-                        {
-                                _languages[Ide].Scripts.Add(_name,
-                                new Script(
-                                    Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + _name + ".js",
-                                    Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + _name + ".ref"));
-                        }
-                        var reffs = Util.splitStringAtNewline(_refs);
-                        String finalSauce = Util.getMethodsWithClass(_cSauce, _name, reffs);
-                        TextWriter streamWriter =
-                            new StreamWriter(
-                                Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + _name + ".cs", false);
-                        streamWriter.Write(finalSauce);
-                        streamWriter.Close();
-
-                        var assInfo =
-                            Util.Compile(
-                                new FileInfo(Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + _name +
-                                             ".cs"),
-                                reffs, _name);
-
-                        File.Delete(Application.dataPath + "/Mods/Scripts/JavaScriptScripts/" + _name + ".cs");
-                        foreach (var go in _gos.Keys)
-                        {
-                            if (go != null)
-                            {
-                                go.AddComponent<PythonBehaviour>();
-                                var python = go.GetComponent<PythonBehaviour>();
-                                python.SourceCodening(assInfo, reffs);
-                                if (!python.Awakening(_name))
-                                {
-                                    Destroy(python);
-                                }
-                                else
-                                {
-                                    AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        Debug.LogError("Please convert your source before executing it!");
-                    }
-                    break;
-                }
-
-                    #endregion
-
-                    #region BF
-
-                case "Brainfuck":
-                {
-                    if (!_cSauce.Equals(""))
-                    {
-                            _languages[Ide].SaveSourceToFile(_sauce, _name);
-                            TextWriter t =
-                            new StreamWriter(Application.dataPath + "/Mods/Scripts/BrainfuckScripts/" + _name + ".ref",
-                                false);
-                        t.Write(_refs);
-                        t.Close();
-                        if (!_languages[Ide].Scripts.ContainsKey(_name))
-                        {
-                                _languages[Ide].Scripts.Add(_name,
-                                new Script(
-                                    Application.dataPath + "/Mods/Scripts/BrainfuckScripts/" + _name + ".bf",
-                                    Application.dataPath + "/Mods/Scripts/BrainfuckScripts/" + _name + ".ref"));
-                        }
-                        var reffs = Util.splitStringAtNewline(_refs);
-                        String finalSauce = Util.getMethodsWithClass(_cSauce, _name, reffs);
-                        TextWriter streamWriter =
-                            new StreamWriter(
-                                Application.dataPath + "/Mods/Scripts/BrainfuckScripts/" + _name + ".cs",
-                                false);
-                            streamWriter.Write(finalSauce);
-                            streamWriter.Close();
-                        var assInfo =
-                            Util.Compile(
-                                new FileInfo(Application.dataPath + "/Mods/Scripts/BrainfuckScripts/" + _name +
-                                             ".cs"),
-                                reffs, _name);
-                        File.Delete(Application.dataPath + "/Mods/Scripts/BrainfuckScripts/" + _name + ".cs");
-                        foreach (var go in _gos.Keys)
-                        {
-                            if (go != null)
-                            {
-                                go.AddComponent<PythonBehaviour>();
-                                var python = go.GetComponent<PythonBehaviour>();
-                                python.SourceCodening(assInfo, reffs);
-                                if (!python.Awakening(_name))
-                                {
-                                    Destroy(python);
-                                }
-                                else
-                                {
-                                    AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        Debug.LogError("Please convert your source before executing it!");
-                    }
-                    break;
-                }
-
-                    #endregion
-
-                    #region Ook
-
-                case "Ook":
-                {
-                    if (!_cSauce.Equals(""))
-                    {
-                            _languages[Ide].SaveSourceToFile(_sauce, _name);
-                            TextWriter t =
-                            new StreamWriter(Application.dataPath + "/Mods/Scripts/OokScripts/" + _name + ".ref",
-                                false);
-                        t.Write(_refs);
-                        t.Close();
-                        if (!_languages[Ide].Scripts.ContainsKey(_name))
-                        {
-                                _languages[Ide].Scripts.Add(_name,
-                                new Script(
-                                    Application.dataPath + "/Mods/Scripts/OokScripts/" + _name + ".ook",
-                                    Application.dataPath + "/Mods/Scripts/OokScripts/" + _name + ".ref"));
-                        }
-                        var reffs = Util.splitStringAtNewline(_refs);
-                        String finalSauce = Util.getMethodsWithClass(_cSauce, _name, reffs);
-                        TextWriter streamWriter =
-                            new StreamWriter(
-                                Application.dataPath + "/Mods/Scripts/OokScripts/" + _name + ".cs",
-                                false);
-                            streamWriter.Write(finalSauce);
-                            streamWriter.Close();
-                        var assInfo =
-                            Util.Compile(
-                                new FileInfo(Application.dataPath + "/Mods/Scripts/OokScripts/" + _name +
-                                             ".cs"),
-                                reffs, _name);
-                        File.Delete(Application.dataPath + "/Mods/Scripts/OokScripts/" + _name + ".cs");
-                        foreach (var go in _gos.Keys)
-                        {
-                            if (go != null)
-                            {
-                                go.AddComponent<PythonBehaviour>();
-                                var python = go.GetComponent<PythonBehaviour>();
-                                python.SourceCodening(assInfo, reffs);
-                                if (!python.Awakening(_name))
-                                {
-                                    Destroy(python);
-                                }
-                                else
-                                {
-                                    AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        Debug.LogError("Please convert your source before executing it!");
-                    }
-                    break;
-                }
-
-                    #endregion
-
-                    #region Chef
-
-                case "Chef":
-                {
-                        _languages[Ide].SaveSourceToFile(_sauce, _name);
-
-                        TextWriter t =
-                        new StreamWriter(Application.dataPath + "/Mods/Scripts/ChefScripts" + _name + ".ref", false);
-                    t.Write(_refs);
-                    t.Close();
-
-                        _languages[Ide].Scripts.Add(_name,
-                        new Script(Application.dataPath + "/Mods/Scripts/ChefScripts/" + _name + ".recipe",
-                            Application.dataPath + "/Mods/Scripts/ChefScripts" + _name + ".ref"));
-                    var chef =
-                        new Chef.Chef(Application.dataPath + "/Mods/Scripts/ChefScripts/" + _name + ".recipe");
-                    break;
-                }
-
-                    #endregion
-
-                    #region TrumpScript
-
-                case "TrumpScript":
-                {
-                    if (!_cSauce.Equals(""))
-                    {
-                        var reffs = Util.splitStringAtNewline(_refs);
-                        String finalSauce = Util.getMethodsWithClass(_cSauce, _name, reffs);
-                            _languages[Ide].SaveSourceToFile(_sauce, _name);
-                            TextWriter tt = new StreamWriter(Application.dataPath + "/Mods/Scripts/temp.cs");
-                        tt.Write(finalSauce);
-                        tt.Close();
-                        TextWriter t =
-                            new StreamWriter(Application.dataPath + "/Mods/Scripts/TrumpScripts/" + _name + ".ref",
-                                false);
-                        t.Write(_refs);
-                        t.Close();
-
-                        if (!_languages[Ide].Scripts.ContainsKey(_name))
-                        {
-                                _languages[Ide].Scripts.Add(_name,
-                                new Script(Application.dataPath + "/Mods/Scripts/TrumpScripts/" + _name + ".ts",
-                                    Application.dataPath + "/Mods/Scripts/TrumpScripts/" + _name + ".ref"));
-                        }
-                        var assInfo = Util.Compile(new FileInfo(Application.dataPath + "/Mods/Scripts/temp.cs"), reffs,
-                            _name);
-                        File.Delete(Application.dataPath + "/Mods/Scripts/temp.cs");
-                        foreach (var go in _gos.Keys)
-                        {
-                            if (go != null)
-                            {
-                                go.AddComponent<PythonBehaviour>();
-                                var python = go.GetComponent<PythonBehaviour>();
-                                python.SourceCodening(assInfo, reffs);
-                                if (!python.Awakening(_name))
-                                {
-                                    Destroy(python);
-                                }
-                                else
-                                {
-                                    AddedScripts.Add(new Tuple<string, GameObject>(_name, go), python);
-                                }
-                            }
-                        }
-                    }
-                    break;
-                }
-
-                    #endregion
-
-                    #region Default
-
-                default:
-                {
-                    Debug.LogError("Please select an IDE!");
-                    break;
-                }
-
-                    #endregion
-
-                    #region Java[OBSOLETE]
-
-                    /*
+            /*
                 case "Java":
                 {
                     TextWriter tw =
@@ -1076,44 +691,16 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 }
                 */
 
-                    #endregion
-            }
+            #endregion
         }
 
-        public void Convertion()
+        private void Convertion()
         {
-            switch (Ide)
-            {
-                case "UnityScript":
-                {
-                    _cSauce = Util.ConvertJSToC(_sauce, "UnityScriptClass");
-                    _displayC = true;
-                    break;
-                }
-                case "Brainfuck":
-                {
-                    var bfb = gameObject.AddComponent<OokAndBrainfuckBehaviour>();
-                    bfb.init(_sauce, true);
-                    StartCoroutine_Auto(bfb.runBF());
-                    break;
-                }
-                case "Ook":
-                {
-                        var bfb = gameObject.AddComponent<OokAndBrainfuckBehaviour>();
-                        bfb.init(_sauce, false);
-                        StartCoroutine_Auto(bfb.runOok());
-                    break;
-                }
-                case "TrumpScript":
-                {
-                    _cSauce = new TrumpScript.TrumpScript().Convert(_sauce);
-                    _displayC = true;
-                    break;
-                }
-            }
+            _cSauce = _languages[Ide].Convert(_sauce, _name, _refs);
+            _displayC = true;
         }
 
-        public void Loadtion(KeyValuePair<String, Script> script)
+        private void Loadtion(KeyValuePair<String, Script> script)
         {
             var f = new FileInfo(script.Value.sourceFile);
             using (TextReader tr = f.OpenText())
@@ -1130,39 +717,86 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
             }
         }
 
-        public void UpdateSauce()
+        private void UpdateSauce()
         {
             if (!Ide.Equals(""))
             {
                 _sauce = _languages[Ide].LoadDefaultFileSource();
             }
             else {
-                    _sauce = "<size=18><color=#ff0000ff>\t\t\t\t\tHow to write a Script and execute it</color></size>" + Util.getNewLine() +
-                             "<size=16>1. Select an IDE (you can hover your mouse over any button to see a more detailed description)</size>" + Util.getNewLine() +
+                    _sauce = "<size=18><color=#ff0000ff>\t\t\t\t\tHow to write a Script and execute it</color></size>" + Util.Util.getNewLine() +
+                             "<size=16>1. Select an IDE (you can hover your mouse over any button to see a more detailed description)</size>" + Util.Util.getNewLine() +
                              "<size=16>2. Press <color=#ffa500ff>Add References</color> and input a Name for your script. This is important during compilation. Additionally, you can already input more references, which your script will be using.</size>" +
-                             Util.getNewLine() +
+                             Util.Util.getNewLine() +
                              "<size=16>3. Press <color=#ffa500ff>Add References</color> again to get back to the source code editor. Now you can write your script. <color=#ff0000ff>DO NOT SWITCH YOUR IDE AFTER WRITING YOUR SOURCE CODE. It would be overridden.</color> When you're done, proceed with <b>Point 4</b></size>" +
-                             Util.getNewLine() +
+                             Util.Util.getNewLine() +
                              "<size=16>4. Press <color=#ffa500ff>GameObject Options</color>. A submenu should show up with <color=#ffa500ff>Choose GameObject(s)</color>, <color=#ffa500ff>Show Selected</color> and <color=#ffa500ff>Add Default</color>. </size>" +
-                             Util.getNewLine() +
+                             Util.Util.getNewLine() +
                              "<size=14>\t4.1. <color=#ffa500ff>Choose GameObject(s)</color> Let's you select the GameObjects your Script should be attached to when you execute it. If you press it, the editor window should be invisible and a help message with further instructions should pop up in the top-left corner. </size>" +
-                             Util.getNewLine() +
-                             "<size=14>\t4.2. <color=#ffa500ff>Show Selected</color> Let's you see the selected GameObject(s). You can click on one to remove it.</size>" + Util.getNewLine() +
+                             Util.Util.getNewLine() +
+                             "<size=14>\t4.2. <color=#ffa500ff>Show Selected</color> Let's you see the selected GameObject(s). You can click on one to remove it.</size>" + Util.Util.getNewLine() +
                              "<size=14>\t4.3. <color=#ffa500ff>Add Default</color> Adds the Default GameObject to the List of selected GameObjects. It is the GameObject, which the ScriptingMod is attached to and is named <color=#ffa500ff>MortimersScriptingMod</color></size>" +
-                             Util.getNewLine() +
-                             "<size=16>5. <color=#ffa500ff>Execute</color> compiles the script and attaches it to the selected GameObject(s). </size>" + Util.getNewLine() +
+                             Util.Util.getNewLine() +
+                             "<size=16>5. <color=#ffa500ff>Execute</color> compiles the script and attaches it to the selected GameObject(s). </size>" + Util.Util.getNewLine() +
                              "<size=14><b>\t5.1. Special cases for the IDEs <color=#ffa500ff>Brainfuck</color>, <color=#ffa500ff>Ook</color> and <color=#ffa500ff>UnityScript</color>. In order for them to work, you have to press <color=#ffa500ff>Convert</color> first. This converts your source code into C# Source Code. This happens in order for you to be able to fix any issues that came up with the convertion.</b></size>" +
-                             Util.getNewLine() +
+                             Util.Util.getNewLine() +
                              "<size=16>6. <color=#ffa500ff>Stop Script</color> displays a List of currently running Scripts. Press the left MouseButton while hovering over one to destroy it. <color=#ffa500ff>OnDestroy</color> will be called.</size>" +
-                             Util.getNewLine() +
+                             Util.Util.getNewLine() +
                              "<size=16>7. <color=#ffa500ff>Load</color> displays a List of saved Scripts. Scripts are saved when you execute them, in order to reduce data garbage on your harddrive with non-working prototypes of your Script. Click on one and the Script will be loaded into the <color=#ffa500ff>Source Code Editor</color>.</size>" +
-                             Util.getNewLine() +
+                             Util.Util.getNewLine() +
                              "<size=16>8. <color=#ffa500ff>Display C# Source</color> will let you switch between your original Source Code and the converted one. Only available for <color=#ffa500ff>Brainfuck</color>, <color=#ffa500ff>Ook</color> and <color=#ffa500ff>UnityScript</color></size>" +
-                             Util.getNewLine() +
-                             "<size=14><i>Additionally, if you want to resize the window, you can enter ScaleX [value] or ScaleY[value] into the console</i></size>" + Util.getNewLine() +
+                             Util.Util.getNewLine() +
+                             "<size=14><i>Additionally, if you want to resize the window, you can enter ScaleX [value] or ScaleY[value] into the console</i></size>" + Util.Util.getNewLine() +
                              "<size=14><i>Deleting a Script is done by right clicking it in the 'Load' screen</i></size>";
             }
             _name = "";
+        }
+
+        private void LoadLanguages()
+        {
+            var infos = new DirectoryInfo(Application.dataPath + "/Mods").GetFiles();
+            foreach (FileInfo fileInfo in infos)
+            {
+                if (fileInfo.FullName.EndsWith("scriptextension.dll"))
+                {
+                    Assembly assembly = Assembly.Load(fileInfo.FullName);
+                    var types = assembly.GetExportedTypes();
+                    foreach (Type type in types)
+                    {
+                        if (!type.IsGenericType && type.BaseType == typeof(LanguageExtension))
+                        {
+                            MethodInfo method = null;
+                            foreach (MethodInfo methodInfo in type.GetMethods())
+                            {
+                                if (methodInfo.Name.Contains("Execute"))
+                                {
+                                    method = methodInfo;
+                                }
+                            }
+                            var namef = type.GetField("name");
+                            var value = (String)namef.GetValue(namef);
+                            var needsConf = type.GetField("needsConvertion");
+                            var needsCon = (bool) needsConf.GetValue(needsConf);
+                            var extensionf = type.GetField("extension");
+                            var extension = (String) extensionf.GetValue(extensionf);
+
+                            MethodInfo conMethod = null;
+                            if (needsCon)
+                            {
+                                foreach (var methodInfo in type.GetMethods())
+                                {
+                                    if (methodInfo.Name.Contains("Convert"))
+                                    {
+                                        conMethod = methodInfo;
+                                    }
+                                }
+                            }
+
+                            _languages.Add(value, new Language(value, needsCon, extension, method, conMethod));
+                        }
+                    }
+                }
+            }
         }
     }
 }

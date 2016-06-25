@@ -5,7 +5,7 @@ using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using UnityEngine;
 
-namespace BesiegeScriptingMod
+namespace BesiegeScriptingMod.Python
 {
     class PythonBehaviour : MonoBehaviour
     {

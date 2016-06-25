@@ -19,18 +19,18 @@ namespace BesiegeScriptingMod
         public void OnUnload()
         {
             myGO.GetComponent<ScriptHandler>().OnUnload();
-            MonoBehaviour.Destroy(myGO);
+            UnityEngine.Object.Destroy(myGO);
         }
 
         public void ScaleX(String arg)
         {
             float scale = float.Parse(arg);
-            myGO.GetComponent<ScriptHandler>().WinRect.width = myGO.GetComponent<ScriptHandler>().WinRect.width*scale;
+            Settings.WinSize.width = Settings.WinSize.width*scale;
         }
         public void ScaleY(String arg)
         {
             float scale = float.Parse(arg);
-            myGO.GetComponent<ScriptHandler>().WinRect.height = myGO.GetComponent<ScriptHandler>().WinRect.height * scale;
+            Settings.WinSize.height = Settings.WinSize.height * scale;
         }
     }
 }

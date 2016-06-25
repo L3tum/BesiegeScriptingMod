@@ -5,10 +5,9 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEngine;
-using ICSharpCode.PythonBinding;
 using Debug = UnityEngine.Debug;
 
-namespace BesiegeScriptingMod
+namespace BesiegeScriptingMod.Util
 {
     public static class Util
     {
@@ -87,7 +86,7 @@ namespace BesiegeScriptingMod
             String finalSauce = "";
             String usings = "";
             String[] lines = splitStringAtNewline(sauce);
-            Dictionary<String, IEnumerable<String>> nss = new Dictionary<string, IEnumerable<String>>();
+            Dictionary<String, IEnumerable<string>> nss = new Dictionary<string, IEnumerable<String>>();
             foreach (string @ref in refs)
             {
                 String reff = @ref.Trim();

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace BesiegeScriptingMod
 {
-    class Script
+    public class Script
     {
         public String sourceFile;
         public String refFile;

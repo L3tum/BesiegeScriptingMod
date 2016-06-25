@@ -57,21 +57,21 @@ namespace BesiegeScriptingMod.LolCode
             pattern.Add(@"(""[a-zA-Z0-9.]*)(:o)([a-zA-Z0-9.]*"")"); //beep in String
             pattern.Add(@"(""[a-zA-Z0-9.]*)(:"")([a-zA-Z0-9.]*"")"); //literal quote in String
             pattern.Add(@"(""[a-zA-Z0-9.]*)(::)([a-zA-Z0-9.]*"")"); //: in String
-            pattern.Add(Util.getNewLineInString(Sauce) + @"? *   *(\.\.\.) ?" + Util.getNewLineInString(Sauce) + @" *   *([a-zA-Z0-9 .]+)"); //Line continuation
-            pattern.Add(@"[^{};](" + Util.getNewLineInString(Sauce) + @")"); //obvsl new line
+            pattern.Add(Util.Util.getNewLineInString(Sauce) + @"? *   *(\.\.\.) ?" + Util.Util.getNewLineInString(Sauce) + @" *   *([a-zA-Z0-9 .]+)"); //Line continuation
+            pattern.Add(@"[^{};](" + Util.Util.getNewLineInString(Sauce) + @")"); //obvsl new line
             #endregion
             #region replacements
-            replacements.Add(@"var $1 = $2;" + Util.getNewLine());
-            replacements.Add(@"var $1;" + Util.getNewLine());
-            replacements.Add(@"$1 = $2;" + Util.getNewLine());
+            replacements.Add(@"var $1 = $2;" + Util.Util.getNewLine());
+            replacements.Add(@"var $1;" + Util.Util.getNewLine());
+            replacements.Add(@"$1 = $2;" + Util.Util.getNewLine());
             replacements.Add(@"//");
             replacements.Add(@"/\*");
             replacements.Add(@"\*/");
             replacements.Add(@"true");
             replacements.Add(@"false");
-            replacements.Add(Util.getNewLine());
+            replacements.Add(Util.Util.getNewLine());
             replacements.Add(@"$2");
-            replacements.Add(@";" + Util.getNewLine());
+            replacements.Add(@";" + Util.Util.getNewLine());
             #endregion
 
             for (int i = 0; i < pattern.Count; i++)

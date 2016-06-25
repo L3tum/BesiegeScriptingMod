@@ -28,7 +28,7 @@ namespace BesiegeScriptingMod.TrumpScript
             {
                 if (!allowed.ALLOWED.Contains(s.ToLower()) && !allowed.trump.Contains(s.ToLower()) && !allowed.vocabulary.Contains(s.ToLower()))
                 {
-                    UnityEngine.Debug.LogError(allowed.Errors["badword"] + Util.getNewLine() + "Bad word: " + s);
+                    UnityEngine.Debug.LogError(allowed.Errors["badword"] + Util.Util.getNewLine() + "Bad word: " + s);
                     return null;
                 }
             }
@@ -63,7 +63,7 @@ namespace BesiegeScriptingMod.TrumpScript
             pattern.Add(@"make |Make ([a-zA-Z0-9]+) ([a-zA-Z0-9]+)"); //Assignment No.2
             pattern.Add(@"(tell|say) (""?[a-zA-Z0-9 ?]+""?)"); //Debug.Log basically
             pattern.Add(@"as long as"); //while
-            pattern.Add(@"[^{};](" + Util.getNewLineInString(sauce) + @")");
+            pattern.Add(@"[^{};](" + Util.Util.getNewLineInString(sauce) + @")");
             pattern.Add(@"fact");
             pattern.Add(@"lie");
             pattern.Add(@"I am ([a-zA-Z]+)ing now");
