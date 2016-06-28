@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
+using BesiegeScriptingMod.LibrariesForScripts;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using UnityEngine;
@@ -38,6 +39,14 @@ namespace BesiegeScriptingMod.Python
             scope.SetVariable("gameObject", gameObject);
             scope.SetVariable("transform", transform);
             scope.SetVariable("enabled", enabled);
+            scope.SetVariable("useAPI", new Action(UseAPI));
+            scope.SetVariable("disableAPI", new Action(DisableAPI));
+
+            if (Settings.useAPI)
+            {
+                Besiege.SetUp();
+                scope.SetVariable("besiege", Besiege._besiege);
+            }
             spaar.ModLoader.Game.OnSimulationToggle += GameOnOnSimulationToggle;
             spaar.ModLoader.Game.OnLevelWon += GameOnOnLevelWon;
 
@@ -148,6 +157,19 @@ namespace BesiegeScriptingMod.Python
             code = null;
             engine = null;
             scope = null;
+        }
+
+        public void UseAPI()
+        {
+            Settings.useAPI = true;
+            Besiege.SetUp();
+            scope.SetVariable("besiege", Besiege._besiege);
+        }
+
+        public void DisableAPI()
+        {
+            Settings.useAPI = false;
+            scope.SetVariable("besiege", null);
         }
 
         /// <summary>

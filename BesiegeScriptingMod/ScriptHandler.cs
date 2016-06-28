@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using BesiegeScriptingMod.Extensions;
+using BesiegeScriptingMod.LibrariesForScripts;
 using BesiegeScriptingMod.Util;
 using spaar.ModLoader;
 using spaar.ModLoader.UI;
@@ -15,7 +16,6 @@ namespace BesiegeScriptingMod
 {
     internal class ScriptHandler : MonoBehaviour
     {
-        //Window stuff
         private readonly int _winId = spaar.ModLoader.Util.GetWindowID();
         private readonly int _chooseWinId = spaar.ModLoader.Util.GetWindowID();
         private readonly int _helpId = spaar.ModLoader.Util.GetWindowID();
@@ -53,6 +53,7 @@ namespace BesiegeScriptingMod
         public void Start()
         {
             Settings.Load();
+            gameObject.AddComponent<SettingsGUI>();
             LoadLanguages();
             _gos.Add(gameObject, Color.clear);
             _refs += Application.dataPath + "/Mods/SpaarModLoader.dll" + Util.Util.getNewLine();
@@ -154,7 +155,6 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
 
             #region Buttons
 
-
             #region EditorToggles
 
             GUILayout.BeginHorizontal(GUI.skin.box);
@@ -227,11 +227,10 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
 
             #endregion
 
-
             #region Menus
 
             GUILayout.BeginHorizontal();
-            _ideSelection = GUILayout.Toggle(_ideSelection, new GUIContent("IDE", "Select a programming language"), _toggleStyle);
+            _ideSelection = GUILayout.Toggle(_ideSelection, new GUIContent("IDE[" + Ide + "]", "Select a programming language"), _toggleStyle);
             if (_ideSelection)
             {
                 _showGoOptions = false;
@@ -249,8 +248,6 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
             if (_ideSelection)
             {
                 GUILayout.BeginHorizontal(GUI.skin.box);
-                Settings.LastIde = Ide;
-                Ide = "";
                 foreach (var value in _languages.Values)
                 {
                     value.selected = GUILayout.Toggle(value.selected, value.name, _toggleStyle);
@@ -269,6 +266,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     _cSauce = "";
                     _displayC = false;
                     _ideSelection = false;
+                    Settings.LastIde = Ide;
                 }
                 GUILayout.EndHorizontal();
 
@@ -317,11 +315,12 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 else
                 {
                     _sauce = GUILayout.TextArea(_sauce);
-                    if (Ide.Equals(""))
+                    if (Ide.Equals("") && Settings.Tutorial)
                     {
                         if (GUILayout.Button(new GUIContent("Got it!", "Disables the Tutorial and selects Lua as the IDE")))
                         {
                             Ide = "Lua";
+                            Settings.Tutorial = false;
                             UpdateSauce();
                         }
                     }
@@ -791,12 +790,17 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                                     }
                                 }
                             }
-
-                            _languages.Add(value, new Language(value, needsCon, extension, method, conMethod));
+                            object extensios = assembly.CreateInstance(type.FullName);
+                            _languages.Add(value, new Language(value, needsCon, extension, method, conMethod, extensios));
                         }
                     }
                 }
             }
+        }
+
+        public void OnLevelWasLoaded(int level)
+        {
+            Besiege.OnLevelWasLoaded();
         }
     }
 }

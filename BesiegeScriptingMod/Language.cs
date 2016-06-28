@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using BesiegeScriptingMod.Brainfuck;
 using BesiegeScriptingMod.Lua;
 using BesiegeScriptingMod.Ook;
 using BesiegeScriptingMod.Python;
 using BesiegeScriptingMod.Util;
-using IronPython.Runtime;
+using JetBrains.Annotations;
 using UnityEngine;
 
 namespace BesiegeScriptingMod
@@ -33,31 +31,31 @@ namespace BesiegeScriptingMod
         private readonly ExecuteDeg _executeDeg;
         private readonly ConvertDeg _convertDeg;
 
-        public Language(String name, bool needsConvertion, String extension, MethodInfo executeMethod = null, MethodInfo convertMethod = null)
+        public Language(String name, bool needsConvertion, String extension, [CanBeNull] MethodInfo executeMethod = null, [CanBeNull] MethodInfo convertMethod = null, [CanBeNull] object languageextension = null)
         {
             this.name = name;
             _folder = Application.dataPath + "/Mods/Scripts/" + name + "Scripts";
             this.needsConvertion = needsConvertion;
-            this._defaultFile = Application.dataPath + "/Mods/Scripts/StandardScripts/" + name + "." + extension;
-            this._extension = extension;
+            _defaultFile = Application.dataPath + "/Mods/Scripts/StandardScripts/" + name + "." + extension;
+            _extension = extension;
             _extensionDot = "." + _extension;
             if (executeMethod == null)
             {
-                _executeDeg = (ExecuteDeg) Delegate.CreateDelegate(typeof (ExecuteDeg), typeof (Language).GetMethod("Execute" + name));
+                _executeDeg = (ExecuteDeg) Delegate.CreateDelegate(typeof (ExecuteDeg), this, typeof (Language).GetMethod("Execute" + name));
             }
             else
             {
-                _executeDeg = (ExecuteDeg)Delegate.CreateDelegate(typeof(ExecuteDeg), executeMethod);
+                _executeDeg = (ExecuteDeg)Delegate.CreateDelegate(typeof(ExecuteDeg), languageextension, executeMethod);
             }
             if (needsConvertion)
             {
                 if (convertMethod != null)
                 {
-                    _convertDeg = (ConvertDeg) Delegate.CreateDelegate(typeof (ConvertDeg), convertMethod);
+                    _convertDeg = (ConvertDeg) Delegate.CreateDelegate(typeof (ConvertDeg), languageextension, convertMethod);
                 }
                 else
                 {
-                    _convertDeg = (ConvertDeg) Delegate.CreateDelegate(typeof (ConvertDeg), typeof (Language).GetMethod("Convert" + name));
+                    _convertDeg = (ConvertDeg) Delegate.CreateDelegate(typeof (ConvertDeg), this, typeof (Language).GetMethod("Convert" + name));
                 }
             }
             InitializeScripts();
@@ -140,7 +138,7 @@ namespace BesiegeScriptingMod
             return _executeDeg.Invoke(refs, sauce, gos, sname, ref addedScripts);
         }
 
-        private bool ExecuteCSharp(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecuteCSharp(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
@@ -176,7 +174,7 @@ namespace BesiegeScriptingMod
             return true;
         }
 
-        private bool ExecuteUnityScript(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecuteUnityScript(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
@@ -212,7 +210,7 @@ namespace BesiegeScriptingMod
             return true;
         }
 
-        private bool ExecuteLua(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecuteLua(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
@@ -239,7 +237,7 @@ namespace BesiegeScriptingMod
             return true;
         }
 
-        private bool ExecutePython(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecutePython(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
@@ -269,7 +267,7 @@ namespace BesiegeScriptingMod
             return true;
         }
 
-        private bool ExecuteBrainfuck(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecuteBrainfuck(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
@@ -305,7 +303,7 @@ namespace BesiegeScriptingMod
             return true;
         }
 
-        private bool ExecuteOok(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecuteOok(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
@@ -341,7 +339,7 @@ namespace BesiegeScriptingMod
             return true;
         }
 
-        private bool ExecuteChef(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecuteChef(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
@@ -352,7 +350,7 @@ namespace BesiegeScriptingMod
             return true;
         }
 
-        private bool ExecuteTrumpScript(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecuteTrumpScript(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
@@ -392,12 +390,12 @@ namespace BesiegeScriptingMod
             return _convertDeg.Invoke(Sauce, sname, refs);
         }
 
-        private String ConvertUnityScript(String Sauce, String sname, String refs)
+        public String ConvertUnityScript(String Sauce, String sname, String refs)
         {
             return Util.Util.ConvertJSToC(Sauce, "UnityScriptClass");
         }
 
-        private String ConvertBrainfuck(String Sauce, String sname, String refs)
+        public String ConvertBrainfuck(String Sauce, String sname, String refs)
         {
             GameObject gameObject = GameObject.Find("MortimersScriptingMod");
             var bfb = gameObject.AddComponent<BrainfuckBehaviour>();
@@ -405,7 +403,7 @@ namespace BesiegeScriptingMod
             return gameObject.GetComponent<ScriptHandler>()._cSauce;
         }
 
-        private String ConvertOok(String Sauce, String sname, String refs)
+        public String ConvertOok(String Sauce, String sname, String refs)
         {
             GameObject gameObject = GameObject.Find("MortimersScriptingMod");
             var bfb = gameObject.AddComponent<OokBehaviour>();
@@ -413,7 +411,7 @@ namespace BesiegeScriptingMod
             return gameObject.GetComponent<ScriptHandler>()._cSauce;
         }
 
-        private String ConvertTrumpScript(String Sauce, String sname, String refs)
+        public String ConvertTrumpScript(String Sauce, String sname, String refs)
         {
             return new TrumpScript.TrumpScript().Convert(Sauce);
         }

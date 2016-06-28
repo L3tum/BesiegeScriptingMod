@@ -1,4 +1,5 @@
 ﻿using System;
+using BesiegeScriptingMod.LibrariesForScripts;
 using NLua;
 using UnityEngine;
 
@@ -24,7 +25,14 @@ namespace BesiegeScriptingMod.Lua
             env["transform"] = transform;
             env["gameObject"] = gameObject;
             env["enabled"] = enabled;
+            env["useAPI"] = new Action(UseAPI);
+            env["disableAPI"] = new Action(DisableAPI);
 
+            if (Settings.useAPI)
+            {
+                Besiege.SetUp();
+                env["besiege"] = Besiege._besiege;
+            }
             try
             {
                 env.DoString(source);
@@ -86,6 +94,19 @@ namespace BesiegeScriptingMod.Lua
         public void OnDestroy()
         {
             Call("OnDestroy");
+        }
+
+        void UseAPI()
+        {
+            Settings.useAPI = true;
+            Besiege.SetUp();
+            env["besiege"] = Besiege._besiege;
+        }
+
+        void DisableAPI()
+        {
+            Settings.useAPI = false;
+            env["besiege"] = null;
         }
 
         public System.Object[] Call(string function, params System.Object[] args)

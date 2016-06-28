@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using Newtonsoft.Json;
+using System.Xml.Serialization;
 using UnityEngine;
 
 namespace BesiegeScriptingMod
@@ -13,17 +10,13 @@ namespace BesiegeScriptingMod
         public static Rect WinSize;
         public static bool Tutorial { get; internal set; }
         public static String LastIde { get; internal set; }
-        private static readonly String SettingsPath = Application.dataPath + "/Mods/Scripts/settings.json";
+        public static bool useAPI;
+        private static readonly String SettingsPath = Application.dataPath + "/Mods/Scripts/settings.xml";
 
         public static void Save()
         {
-            SaveSettings ss = new SaveSettings(WinSize, LastIde);
-            String json = JsonConvert.SerializeObject(ss);
-            using (TextWriter tw = new StreamWriter(SettingsPath, false))
-            {
-                tw.Write(json);
-                tw.Close();
-            }
+            SaveSettings ss = new SaveSettings(WinSize, LastIde, useAPI);
+            new XmlSerializer(typeof (SaveSettings)).Serialize(new StreamWriter(SettingsPath, false), ss);
         }
 
         public static void Load()
@@ -31,15 +24,10 @@ namespace BesiegeScriptingMod
             if (File.Exists(SettingsPath))
             {
 
-                String json;
-                using (TextReader tr = new StreamReader(SettingsPath))
-                {
-                    json = tr.ReadToEnd();
-                    tr.Close();
-                }
-                SaveSettings ss = JsonConvert.DeserializeObject<SaveSettings>(json);
+                SaveSettings ss = (SaveSettings)new XmlSerializer(typeof (SaveSettings)).Deserialize(new StreamReader(SettingsPath));
                 WinSize = ss.WinSize;
                 LastIde = ss.LastIde;
+                useAPI = ss.useAPI;
                 Tutorial = true;
             }
             else
@@ -47,19 +35,27 @@ namespace BesiegeScriptingMod
                 Vector2 windowLoc = new Vector2(Screen.width - 1200.0f, Screen.height - 400.0f);
                 WinSize = new Rect(100.0f, 20.0f, windowLoc.x, windowLoc.y);
                 Tutorial = true;
-                LastIde = "Lua";
+                useAPI = false;
+                LastIde = "";
             }
         }
     }
 
-    internal class SaveSettings
+    public class SaveSettings
     {
         public Rect WinSize;
-        public readonly String LastIde;
-        public SaveSettings(Rect winSize, String lastIde)
+        public String LastIde;
+        public bool useAPI;
+        public SaveSettings(Rect winSize, String lastIde, bool useApi)
         {
             this.WinSize = winSize;
             this.LastIde = lastIde;
+            useAPI = useApi;
+        }
+
+        public SaveSettings()
+        {
+            
         }
     }
 }
