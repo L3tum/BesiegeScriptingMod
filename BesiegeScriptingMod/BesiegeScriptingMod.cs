@@ -8,11 +8,11 @@ namespace BesiegeScriptingMod
     public class BesiegeScriptingMod
     {
         GameObject myGO;
-        public void OnLoad(Key activator, Key selector)
+        public void OnLoad(Key activator, Key selector, Key settings, Key bi)
         {
             myGO = new GameObject("MortimersScriptingMod");
             ScriptHandler sh = (ScriptHandler)myGO.AddComponent<ScriptHandler>();
-            sh.SetKeys(activator, selector);
+            sh.SetKeys(activator, selector, settings, bi);
             myGO.AddComponent<DontDestroyOnLoady>();
         }
 

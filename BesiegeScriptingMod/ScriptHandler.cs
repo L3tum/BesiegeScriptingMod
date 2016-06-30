@@ -10,7 +10,9 @@ using BesiegeScriptingMod.Util;
 using spaar.ModLoader;
 using spaar.ModLoader.UI;
 using UnityEngine;
+using Application = UnityEngine.Application;
 using Debug = UnityEngine.Debug;
+using Screen = UnityEngine.Screen;
 
 namespace BesiegeScriptingMod
 {
@@ -19,9 +21,11 @@ namespace BesiegeScriptingMod
         private readonly int _winId = spaar.ModLoader.Util.GetWindowID();
         private readonly int _chooseWinId = spaar.ModLoader.Util.GetWindowID();
         private readonly int _helpId = spaar.ModLoader.Util.GetWindowID();
+        private readonly int _blockInfoID = spaar.ModLoader.Util.GetWindowID();
         private Vector2 _refPos;
         private Vector2 _scrollPos = new Vector2(0, Mathf.Infinity);
         private Rect _chooseRect = new Rect(0, 20.0f, 100.0f, 100.0f);
+        private Rect _bInfoRect;
         public bool _displayC;
         private bool _addingRefs;
         private GUIStyle _toggleStyle;
@@ -35,10 +39,13 @@ namespace BesiegeScriptingMod
         private bool _chooseObject;
         private bool _showObjects;
         private bool _showGoOptions;
+        private bool _bInfo;
+        private GameObject block;
 
         private string _name = "";
-        private readonly Dictionary<GameObject, Color> _gos = new Dictionary<GameObject, Color>();
-        private readonly Dictionary<String, Language> _languages = new Dictionary<string, Language>(); 
+        private readonly Dictionary<GameObject, Tuple<Renderer, Color>> _gos = new Dictionary<GameObject, Tuple<Renderer, Color>>();
+        private readonly Dictionary<String, Language> _languages = new Dictionary<string, Language>();
+
         private Dictionary<Tuple<string, GameObject>, Component> AddedScripts =
             new Dictionary<Tuple<string, GameObject>, Component>();
 
@@ -48,14 +55,17 @@ namespace BesiegeScriptingMod
         private string _sauce = "";
         private Key _key;
         private Key _selecting;
-        private string _lastTooltip = "";
+        private Key _settingsGui;
+        private Key _blockInfo;
+        internal string LastTooltip = "";
 
         public void Start()
         {
             Settings.Load();
-            gameObject.AddComponent<SettingsGUI>();
+            SettingsGUI sg = gameObject.AddComponent<SettingsGUI>();
+            sg.SetKey(_settingsGui);
             LoadLanguages();
-            _gos.Add(gameObject, Color.clear);
+            _gos.Add(gameObject, new Tuple<Renderer, Color>(null, Color.clear));
             _refs += Application.dataPath + "/Mods/SpaarModLoader.dll" + Util.Util.getNewLine();
             _refs += Application.dataPath + "/Managed/Assembly-UnityScript.dll" + Util.Util.getNewLine();
             _refs += Application.dataPath + "/Managed/Assembly-UnityScript-firstpass.dll" + Util.Util.getNewLine();
@@ -74,10 +84,12 @@ namespace BesiegeScriptingMod
             UpdateSauce();
         }
 
-        public void SetKeys(Key key, Key key2)
+        public void SetKeys(Key key, Key key2, Key key3, Key key4)
         {
             _key = key;
             _selecting = key2;
+            _settingsGui = key3;
+            _blockInfo = key4;
         }
 
         public void OnGUI()
@@ -124,7 +136,9 @@ namespace BesiegeScriptingMod
                 };
                 _chooseRect = GUILayout.Window(_chooseWinId, _chooseRect, Func2, "Choosing Objects");
             }
-            if (_lastTooltip != "")
+
+
+            if (LastTooltip != "")
             {
                 GUI.skin = ModGUI.Skin;
                 var background = GUI.skin.label.normal.background;
@@ -135,11 +149,40 @@ namespace BesiegeScriptingMod
                 };
                 GUILayout.Window(_helpId, new Rect(Input.mousePosition.x, Screen.height - Input.mousePosition.y + 10.0f, 100.0f, 50.0f), HelpFunc, "ToolTip");
             }
+
+            if (_bInfo)
+            {
+                GUI.skin = ModGUI.Skin;
+                _bInfoRect = GUILayout.Window(_blockInfoID, _bInfoRect, BlockInfo, "Block Info");
+            }
+        }
+
+        private void BlockInfo(int id)
+        {
+            BlockBehaviour bb = block.GetComponent<BlockBehaviour>();
+            GUILayout.Label("Name: " + block.name);
+            GUILayout.Label("ID: " + bb.GetBlockID());
+            GUILayout.Label("GUID: " + bb.Guid);
+            GUILayout.Space(25.0f);
+
+            if (GUILayout.Button(new GUIContent("Copy to Clipboard", "Copies the GUID to the Clipboard")))
+            {
+                TextEditor te = new TextEditor {content = new GUIContent(bb.Guid.ToString())};
+                te.SelectAll();
+                te.Copy();
+            }
+
+            if (GUILayout.Button(new GUIContent("Close", "Closes the Block Info Window")))
+            {
+                _bInfo = false;
+            }
+            LastTooltip = GUI.tooltip;
+            GUI.DragWindow();
         }
 
         private void HelpFunc(int id)
         {
-            GUILayout.Label(_lastTooltip, _defaultLabel);
+            GUILayout.Label(LastTooltip, _defaultLabel);
         }
 
         private void Func2(int id)
@@ -242,9 +285,11 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 _ideSelection = false;
             }
             GUILayout.EndHorizontal();
-            #endregion 
+
+            #endregion
 
             #region SubMenus
+
             if (_ideSelection)
             {
                 GUILayout.BeginHorizontal(GUI.skin.box);
@@ -269,7 +314,6 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     Settings.LastIde = Ide;
                 }
                 GUILayout.EndHorizontal();
-
             }
             else if (_showGoOptions)
             {
@@ -295,12 +339,13 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 {
                     if (!_gos.Keys.Contains(gameObject))
                     {
-                        _gos.Add(gameObject, Color.black);
+                        _gos.Add(gameObject, new Tuple<Renderer, Color>(null, Color.clear));
                     }
                 }
                 GUILayout.EndHorizontal();
             }
-            #endregion 
+
+            #endregion
 
             #endregion
 
@@ -489,14 +534,35 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
 
             #endregion
 
-            _lastTooltip = GUI.tooltip;
+            LastTooltip = GUI.tooltip;
             GUI.DragWindow();
         }
 
         public void Update()
         {
-            if (_key.Pressed())
+            if (!_chooseObject && _key.Pressed())
                 _isOpen = !_isOpen;
+
+            if (_blockInfo.Pressed())
+            {
+                RaycastHit hit;
+                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out hit))
+                {
+                    if (hit.collider != null)
+                    {
+                        Transform current = hit.transform;
+                        while (current.parent.name != "Building Machine" && current.parent.name != "Simulation Machine" && current.parent != null)
+                        {
+                            current = current.parent;
+                        }
+                        block = current.gameObject;
+                        _bInfo = true;
+                    }
+                }
+                _bInfoRect = new Rect(Input.mousePosition.x + 50.0f, Screen.height - Input.mousePosition.y + 10.0f, 200.0f, 100.0f);
+            }
+
             if (!_chooseObject) return;
             if (_selecting.Pressed())
             {
@@ -507,7 +573,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     if (hit.collider != null)
                     {
                         Transform current = hit.transform;
-                        while (current.parent.name != "Building Machine" && current.parent.name != "Simulation Machine")
+                        while (current.parent.name != "Building Machine" && current.parent.name != "Simulation Machine"  && current.parent != null)
                         {
                             current = current.parent;
                         }
@@ -518,10 +584,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         }
                         else
                         {
-                            _gos.Add(go,
-                                go.GetComponent<Renderer>()
-                                    ? go.GetComponent<Renderer>().material.color
-                                    : Color.clear);
+                            _gos.Add(go, new Tuple<Renderer, Color>(go.GetComponent<Renderer>() ? go.GetComponent<Renderer>() : go.GetComponentInChildren<Renderer>() ? go.GetComponentInChildren<Renderer>() : null, go.GetComponent<Renderer>() ? go.GetComponent<Renderer>().material.color : go.GetComponentInChildren<Renderer>() ? go.GetComponentInChildren<Renderer>().material.color : Color.clear));
                         }
                     }
                 }
@@ -535,33 +598,30 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     if (hit.collider != null)
                     {
                         Transform current = hit.transform;
-                        while (current.parent.name != "Building Machine" && current.parent.name != "Simulation Machine")
+                        while (current.parent.name != "Building Machine" && current.parent.name != "Simulation Machine" && current.parent != null)
                         {
                             current = current.parent;
                         }
                         GameObject go = current.gameObject;
                         _gos.Clear();
-                        _gos.Add(go,
-                            go.GetComponent<Renderer>()
-                                ? go.GetComponent<Renderer>().material.color
-                                : Color.clear);
+                        _gos.Add(go, new Tuple<Renderer, Color>(go.GetComponent<Renderer>() ? go.GetComponent<Renderer>() : go.GetComponentInChildren<Renderer>() ? go.GetComponentInChildren<Renderer>() : null, go.GetComponent<Renderer>() ? go.GetComponent<Renderer>().material.color : go.GetComponentInChildren<Renderer>() ? go.GetComponentInChildren<Renderer>().material.color : Color.clear));
                     }
                 }
             }
             if (_gos.Count > 0)
             {
-                foreach (KeyValuePair<GameObject, Color> go in _gos.Where(go => !go.Value.Equals(Color.clear)))
+                foreach (KeyValuePair<GameObject, Tuple<Renderer, Color>> go in _gos.Where(go => !go.Value.First.Equals(null)))
                 {
-                    go.Key.GetComponent<Renderer>().material.color = Color.red;
+                    go.Value.First.material.color = Color.red;
                 }
             }
             if (_key.Pressed())
             {
                 if (_gos.Count > 0)
                 {
-                    foreach (KeyValuePair<GameObject, Color> go in _gos.Where(go => !go.Value.Equals(Color.clear)))
+                    foreach (KeyValuePair<GameObject, Tuple<Renderer, Color>> go in _gos.Where(go => !go.Value.First.Equals(null)))
                     {
-                        go.Key.GetComponent<Renderer>().material.color = go.Value;
+                        go.Value.First.material.color = go.Value.Second;
                     }
                 }
                 _chooseObject = false;
@@ -627,7 +687,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     }
                 }
             }
-            if(!_languages[Ide].Execute(_refs, _languages[Ide].needsConvertion ? _cSauce : _sauce, _gos.Keys.ToList(), _name, ref AddedScripts))
+            if (!_languages[Ide].Execute(_refs, _languages[Ide].needsConvertion ? _cSauce : _sauce, _gos.Keys.ToList(), _name, ref AddedScripts))
             {
                 Debug.LogError("Critical error!");
                 return;
@@ -722,31 +782,32 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
             {
                 _sauce = _languages[Ide].LoadDefaultFileSource();
             }
-            else {
-                    _sauce = "<size=18><color=#ff0000ff>\t\t\t\t\tHow to write a Script and execute it</color></size>" + Util.Util.getNewLine() +
-                             "<size=16>1. Select an IDE (you can hover your mouse over any button to see a more detailed description)</size>" + Util.Util.getNewLine() +
-                             "<size=16>2. Press <color=#ffa500ff>Add References</color> and input a Name for your script. This is important during compilation. Additionally, you can already input more references, which your script will be using.</size>" +
-                             Util.Util.getNewLine() +
-                             "<size=16>3. Press <color=#ffa500ff>Add References</color> again to get back to the source code editor. Now you can write your script. <color=#ff0000ff>DO NOT SWITCH YOUR IDE AFTER WRITING YOUR SOURCE CODE. It would be overridden.</color> When you're done, proceed with <b>Point 4</b></size>" +
-                             Util.Util.getNewLine() +
-                             "<size=16>4. Press <color=#ffa500ff>GameObject Options</color>. A submenu should show up with <color=#ffa500ff>Choose GameObject(s)</color>, <color=#ffa500ff>Show Selected</color> and <color=#ffa500ff>Add Default</color>. </size>" +
-                             Util.Util.getNewLine() +
-                             "<size=14>\t4.1. <color=#ffa500ff>Choose GameObject(s)</color> Let's you select the GameObjects your Script should be attached to when you execute it. If you press it, the editor window should be invisible and a help message with further instructions should pop up in the top-left corner. </size>" +
-                             Util.Util.getNewLine() +
-                             "<size=14>\t4.2. <color=#ffa500ff>Show Selected</color> Let's you see the selected GameObject(s). You can click on one to remove it.</size>" + Util.Util.getNewLine() +
-                             "<size=14>\t4.3. <color=#ffa500ff>Add Default</color> Adds the Default GameObject to the List of selected GameObjects. It is the GameObject, which the ScriptingMod is attached to and is named <color=#ffa500ff>MortimersScriptingMod</color></size>" +
-                             Util.Util.getNewLine() +
-                             "<size=16>5. <color=#ffa500ff>Execute</color> compiles the script and attaches it to the selected GameObject(s). </size>" + Util.Util.getNewLine() +
-                             "<size=14><b>\t5.1. Special cases for the IDEs <color=#ffa500ff>Brainfuck</color>, <color=#ffa500ff>Ook</color> and <color=#ffa500ff>UnityScript</color>. In order for them to work, you have to press <color=#ffa500ff>Convert</color> first. This converts your source code into C# Source Code. This happens in order for you to be able to fix any issues that came up with the convertion.</b></size>" +
-                             Util.Util.getNewLine() +
-                             "<size=16>6. <color=#ffa500ff>Stop Script</color> displays a List of currently running Scripts. Press the left MouseButton while hovering over one to destroy it. <color=#ffa500ff>OnDestroy</color> will be called.</size>" +
-                             Util.Util.getNewLine() +
-                             "<size=16>7. <color=#ffa500ff>Load</color> displays a List of saved Scripts. Scripts are saved when you execute them, in order to reduce data garbage on your harddrive with non-working prototypes of your Script. Click on one and the Script will be loaded into the <color=#ffa500ff>Source Code Editor</color>.</size>" +
-                             Util.Util.getNewLine() +
-                             "<size=16>8. <color=#ffa500ff>Display C# Source</color> will let you switch between your original Source Code and the converted one. Only available for <color=#ffa500ff>Brainfuck</color>, <color=#ffa500ff>Ook</color> and <color=#ffa500ff>UnityScript</color></size>" +
-                             Util.Util.getNewLine() +
-                             "<size=14><i>Additionally, if you want to resize the window, you can enter ScaleX [value] or ScaleY[value] into the console</i></size>" + Util.Util.getNewLine() +
-                             "<size=14><i>Deleting a Script is done by right clicking it in the 'Load' screen</i></size>";
+            else
+            {
+                _sauce = "<size=18><color=#ff0000ff>\t\t\t\t\tHow to write a Script and execute it</color></size>" + Util.Util.getNewLine() +
+                         "<size=16>1. Select an IDE (you can hover your mouse over any button to see a more detailed description)</size>" + Util.Util.getNewLine() +
+                         "<size=16>2. Press <color=#ffa500ff>Add References</color> and input a Name for your script. This is important during compilation. Additionally, you can already input more references, which your script will be using.</size>" +
+                         Util.Util.getNewLine() +
+                         "<size=16>3. Press <color=#ffa500ff>Add References</color> again to get back to the source code editor. Now you can write your script. <color=#ff0000ff>DO NOT SWITCH YOUR IDE AFTER WRITING YOUR SOURCE CODE. It would be overridden.</color> When you're done, proceed with <b>Point 4</b></size>" +
+                         Util.Util.getNewLine() +
+                         "<size=16>4. Press <color=#ffa500ff>GameObject Options</color>. A submenu should show up with <color=#ffa500ff>Choose GameObject(s)</color>, <color=#ffa500ff>Show Selected</color> and <color=#ffa500ff>Add Default</color>. </size>" +
+                         Util.Util.getNewLine() +
+                         "<size=14>\t4.1. <color=#ffa500ff>Choose GameObject(s)</color> Let's you select the GameObjects your Script should be attached to when you execute it. If you press it, the editor window should be invisible and a help message with further instructions should pop up in the top-left corner. </size>" +
+                         Util.Util.getNewLine() +
+                         "<size=14>\t4.2. <color=#ffa500ff>Show Selected</color> Let's you see the selected GameObject(s). You can click on one to remove it.</size>" + Util.Util.getNewLine() +
+                         "<size=14>\t4.3. <color=#ffa500ff>Add Default</color> Adds the Default GameObject to the List of selected GameObjects. It is the GameObject, which the ScriptingMod is attached to and is named <color=#ffa500ff>MortimersScriptingMod</color></size>" +
+                         Util.Util.getNewLine() +
+                         "<size=16>5. <color=#ffa500ff>Execute</color> compiles the script and attaches it to the selected GameObject(s). </size>" + Util.Util.getNewLine() +
+                         "<size=14><b>\t5.1. Special cases for the IDEs <color=#ffa500ff>Brainfuck</color>, <color=#ffa500ff>Ook</color> and <color=#ffa500ff>UnityScript</color>. In order for them to work, you have to press <color=#ffa500ff>Convert</color> first. This converts your source code into C# Source Code. This happens in order for you to be able to fix any issues that came up with the convertion.</b></size>" +
+                         Util.Util.getNewLine() +
+                         "<size=16>6. <color=#ffa500ff>Stop Script</color> displays a List of currently running Scripts. Press the left MouseButton while hovering over one to destroy it. <color=#ffa500ff>OnDestroy</color> will be called.</size>" +
+                         Util.Util.getNewLine() +
+                         "<size=16>7. <color=#ffa500ff>Load</color> displays a List of saved Scripts. Scripts are saved when you execute them, in order to reduce data garbage on your harddrive with non-working prototypes of your Script. Click on one and the Script will be loaded into the <color=#ffa500ff>Source Code Editor</color>.</size>" +
+                         Util.Util.getNewLine() +
+                         "<size=16>8. <color=#ffa500ff>Display C# Source</color> will let you switch between your original Source Code and the converted one. Only available for <color=#ffa500ff>Brainfuck</color>, <color=#ffa500ff>Ook</color> and <color=#ffa500ff>UnityScript</color></size>" +
+                         Util.Util.getNewLine() +
+                         "<size=14><i>Additionally, if you want to resize the window, you can enter ScaleX [value] or ScaleY[value] into the console</i></size>" + Util.Util.getNewLine() +
+                         "<size=14><i>Deleting a Script is done by right clicking it in the 'Load' screen</i></size>";
             }
             _name = "";
         }
@@ -762,7 +823,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     var types = assembly.GetExportedTypes();
                     foreach (Type type in types)
                     {
-                        if (!type.IsGenericType && type.BaseType == typeof(LanguageExtension))
+                        if (!type.IsGenericType && type.BaseType == typeof (LanguageExtension))
                         {
                             MethodInfo method = null;
                             foreach (MethodInfo methodInfo in type.GetMethods())
@@ -773,7 +834,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                                 }
                             }
                             var namef = type.GetField("name");
-                            var value = (String)namef.GetValue(namef);
+                            var value = (String) namef.GetValue(namef);
                             var needsConf = type.GetField("needsConvertion");
                             var needsCon = (bool) needsConf.GetValue(needsConf);
                             var extensionf = type.GetField("extension");
