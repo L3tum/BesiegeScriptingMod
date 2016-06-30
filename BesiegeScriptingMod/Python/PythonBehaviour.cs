@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
+using BesiegeScriptingMod.LibrariesForScripts;
+using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
 using UnityEngine;
 
-namespace BesiegeScriptingMod
+namespace BesiegeScriptingMod.Python
 {
     class PythonBehaviour : MonoBehaviour
     {
@@ -30,13 +32,21 @@ namespace BesiegeScriptingMod
         /// Starts the $PythonBehaviour
         /// </summary>
         /// <param name="classname">Name of the Script</param>
-        public void Awakening(String classname)
+        public bool Awakening(String classname)
         {
             scope = engine.CreateScope();
             scope.SetVariable("this", this);
             scope.SetVariable("gameObject", gameObject);
             scope.SetVariable("transform", transform);
             scope.SetVariable("enabled", enabled);
+            scope.SetVariable("useAPI", new Action(UseAPI));
+            scope.SetVariable("disableAPI", new Action(DisableAPI));
+
+            if (Settings.useAPI)
+            {
+                Besiege.SetUp();
+                scope.SetVariable("besiege", Besiege._besiege);
+            }
             spaar.ModLoader.Game.OnSimulationToggle += GameOnOnSimulationToggle;
             spaar.ModLoader.Game.OnLevelWon += GameOnOnLevelWon;
 
@@ -79,13 +89,21 @@ namespace BesiegeScriptingMod
                 catch (Exception ex)
                 {
                     Debug.LogException(ex);
+                    return false;
                 }
             }
             ScriptSource source = engine.CreateScriptSourceFromString(sauce);
-            code = source.Compile();
+            ErrorListener error = new ErrorSinkProxyListener(ErrorSink.Default);
+            code = source.Compile(error);
+            if (code == null)
+            {
+                Debug.LogError(error);
+                return false;
+            }
             code.Execute(scope);
             pythonClass = engine.Operations.Invoke(scope.GetVariable(classname));
             CallMethod("Awake");
+            return true;
         }
 
         private void GameOnOnLevelWon()
@@ -139,6 +157,19 @@ namespace BesiegeScriptingMod
             code = null;
             engine = null;
             scope = null;
+        }
+
+        public void UseAPI()
+        {
+            Settings.useAPI = true;
+            Besiege.SetUp();
+            scope.SetVariable("besiege", Besiege._besiege);
+        }
+
+        public void DisableAPI()
+        {
+            Settings.useAPI = false;
+            scope.SetVariable("besiege", null);
         }
 
         /// <summary>

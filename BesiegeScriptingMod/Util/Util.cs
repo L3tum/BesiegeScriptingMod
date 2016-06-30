@@ -5,19 +5,18 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEngine;
-using ICSharpCode.PythonBinding;
 using Debug = UnityEngine.Debug;
 
-namespace BesiegeScriptingMod
+namespace BesiegeScriptingMod.Util
 {
     public static class Util
     {
         /// <summary>
         /// Converts the C# Source into Python
         /// </summary>
-        /// <param name="sauce">Source code written by $user</param>
-        /// <param name="refs">References specified by $user</param>
-        /// <param name="name">$name of the script</param>
+        /// <param Name="sauce">Source code written by $user</param>
+        /// <param Name="refs">References specified by $user</param>
+        /// <param Name="name">$Name of the script</param>
         /// <returns>Source code in Python format</returns>
         public static String Compile(FileInfo sauce, string[] refs, string name)
         {
@@ -28,12 +27,7 @@ namespace BesiegeScriptingMod
             {
                 str = indentString.Convert(tr.ReadToEnd());
             }
-            FileInfo fi = new FileInfo(Application.dataPath + "/Mods/Scripts/CSharpScripts/" + name + ".temp.py");
-            using (TextWriter tw = fi.CreateText())
-            {
-                tw.Write(str);
-            }
-            return Application.dataPath + "/Mods/Scripts/CSharpScripts/" + name + ".temp.py";
+            return str;
 
             #region alternative[OBSOLETE]
 
@@ -81,18 +75,18 @@ namespace BesiegeScriptingMod
         }
 
         /// <summary>
-        /// Wraps methods written by $user in a class with the specified $name
+        /// Wraps methods written by $user in a class with the specified $Name
         /// </summary>
-        /// <param name="sauce">The source code written by $user</param>
-        /// <param name="name">The name of the script and class specified by $user</param>
-        /// <param name="refs">The References for this Script</param>
+        /// <param Name="sauce">The source code written by $user</param>
+        /// <param Name="name">The Name of the script and class specified by $user</param>
+        /// <param Name="refs">The References for this Script</param>
         /// <returns>Source Code wrapped into a class</returns>
         public static String getMethodsWithClass(String sauce, String name, String[] refs)
         {
             String finalSauce = "";
             String usings = "";
             String[] lines = splitStringAtNewline(sauce);
-            Dictionary<String, IEnumerable<String>> nss = new Dictionary<string, IEnumerable<String>>();
+            Dictionary<String, IEnumerable<string>> nss = new Dictionary<string, IEnumerable<String>>();
             foreach (string @ref in refs)
             {
                 String reff = @ref.Trim();
@@ -121,18 +115,22 @@ namespace BesiegeScriptingMod
             }
             lines = lines.Where(x => !string.IsNullOrEmpty(x) && !x.Equals("\r\n") && !x.Equals("\r") && !x.Equals("\n") && !String.IsNullOrEmpty(x.Trim())).ToArray();
             sauce = String.Concat(lines);
+            if (!usings.Contains("using UnityEngine;"))
+            {
+                usings += "using UnityEngine;" + getNewLine();
+            }
             finalSauce += usings;
             finalSauce += @"public class " + name + " : MonoBehaviour{" + getNewLine() + sauce + getNewLine() + "}";
             return finalSauce;
         }
 
         /// <summary>
-        /// Wraps methods written by $user in a clas with the specified $name
+        /// Wraps methods written by $user in a clas with the specified $Name
         /// Special Case for Python Source Code
         /// </summary>
-        /// <param name="sauce">The source code written by $use</param>
-        /// <param name="name">The name of the script and class specified by $user</param>
-        /// <param name="refs">The References for this Script</param>
+        /// <param Name="sauce">The source code written by $use</param>
+        /// <param Name="name">The Name of the script and class specified by $user</param>
+        /// <param Name="refs">The References for this Script</param>
         /// <returns>Source Code wrapped into a class</returns>
         public static String getMethodsWithClassPython(String sauce, String name, String[] refs)
         {
@@ -177,6 +175,10 @@ namespace BesiegeScriptingMod
                 }
             }
             sauce = String.Concat(lines);
+            if (!imports.Contains("from UnityEngine import *"))
+            {
+                imports += "from UnityEngine import *" + getNewLine();
+            }
             finalSauce += imports;
             finalSauce += @"class " + name + "(MonoBehaviour):" + getNewLine() + sauce;
             return finalSauce;
@@ -185,7 +187,7 @@ namespace BesiegeScriptingMod
         /// <summary>
         /// Splits the String at the new line parameters for each OS
         /// </summary>
-        /// <param name="sauce">Source String to split</param>
+        /// <param Name="sauce">Source String to split</param>
         /// <returns>String array of splitted source</returns>
         public static String[] splitStringAtNewline(String sauce)
         {
@@ -195,7 +197,7 @@ namespace BesiegeScriptingMod
         /// <summary>
         /// Splits the String at new line and space chararacters for each OS
         /// </summary>
-        /// <param name="sauce">Source String to split</param>
+        /// <param Name="sauce">Source String to split</param>
         /// <returns>String array of splitted source</returns>
         public static String[] splitStringAtNewlineAndSpace(String sauce)
         {
@@ -222,9 +224,34 @@ namespace BesiegeScriptingMod
             return "\r";
         }
 
+        /// <summary>
+        /// Gives a new line specifically for a Script. Should enable easier cross-plattform sharing of Scripts
+        /// </summary>
+        /// <param Name="sauce">Source Code</param>
+        /// <returns>New-Line-Character</returns>
+        public static String getNewLineInString(String sauce)
+        {
+            if (sauce.Contains("\r\n"))
+            {
+                return "\r\n";
+            }
+            else if (sauce.Contains("\r"))
+            {
+                return "\r";
+            }
+            else if (sauce.Contains("\n"))
+            {
+                return "\n";
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         #region Java[OBSOLETE]
         /*
-        public static void compileJava(String name, String fileName, String[] javaRefs)
+        public static void compileJava(String Name, String fileName, String[] javaRefs)
         {
 
             if (Application.platform.Equals(RuntimePlatform.WindowsPlayer) ||
@@ -236,7 +263,7 @@ namespace BesiegeScriptingMod
                     WindowStyle = ProcessWindowStyle.Hidden,
                     FileName = "cmd.exe",
                     Arguments = "jar cf " + Application.dataPath + "/Mods/Scripts/TempScripts/" +
-                                name + ".jar " + fileName + " " + string.Concat(javaRefs)
+                                Name + ".jar " + fileName + " " + string.Concat(javaRefs)
                 };
                 process.StartInfo = startInfo;
                 process.Start();
@@ -253,7 +280,7 @@ namespace BesiegeScriptingMod
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     Arguments = "jar cf " + Application.dataPath + "/Mods/Scripts/TempScripts/" +
-                                name + ".jar " + fileName + " " + string.Concat(javaRefs)
+                                Name + ".jar " + fileName + " " + string.Concat(javaRefs)
                 };
 
                 var p = Process.Start(psi);
@@ -266,8 +293,8 @@ namespace BesiegeScriptingMod
         /// <summary>
         /// Converts Unity-Script source into C# source
         /// </summary>
-        /// <param name="output">Source code in US</param>
-        /// <param name="className">Name of the script</param>
+        /// <param Name="output">Source code in US</param>
+        /// <param Name="className">Name of the script</param>
         /// <returns>Source code in C# format</returns>
         public static string ConvertJSToC(string output, string className)
         {
@@ -397,9 +424,9 @@ namespace BesiegeScriptingMod
         /// <summary>
         /// Helper-Method for $ConvertJSToC
         /// </summary>
-        /// <param name="input"></param>
-        /// <param name="pattern"></param>
-        /// <param name="replacements"></param>
+        /// <param Name="input"></param>
+        /// <param Name="pattern"></param>
+        /// <param Name="replacements"></param>
         /// <returns></returns>
         private static string PregReplace(string input, string[] pattern, string[] replacements)
         {

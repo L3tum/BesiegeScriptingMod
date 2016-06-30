@@ -1,8 +1,7 @@
-﻿using ICSharpCode.NRefactory.Ast;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using ICSharpCode.NRefactory.Ast;
 
-namespace ICSharpCode.PythonBinding
+namespace BesiegeScriptingMod.Util
 {
     public class PythonConstructorInfo
     {

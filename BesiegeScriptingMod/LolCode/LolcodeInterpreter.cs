@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using ICSharpCode.NRefactory.Ast;
+using Microsoft.Scripting;
 using Mono.Cecil.Metadata;
 using UnityEngine;
 
@@ -10,6 +13,8 @@ namespace BesiegeScriptingMod.LolCode
     class LolcodeInterpreter
     {
         public String Sauce = "";
+        public List<String> pattern = new List<string>();
+        public List<String> replacements = new List<string>(); 
 
         public LolcodeInterpreter(String Sauce)
         {
@@ -18,69 +23,63 @@ namespace BesiegeScriptingMod.LolCode
 
         public String convert()
         {
-            String[] sauce2 = Sauce.Split(new[] {" "}, StringSplitOptions.RemoveEmptyEntries);
-            sauce2 = Replace(sauce2);
-            return Sauce;
-        }
-
-        private String[] Replace(String[] sauce)
-        {
-            for (int i = 0; i < sauce.Length; i++)
+            if (!Sauce.StartsWith("Hai 1.2"))
             {
-                if (sauce[i].Equals(","))
-                {
-                    if (sauce[i + 1].Equals("BTW") || sauce[i+1].Equals("OBTW") || sauce[i+1].Equals("TLDR"))
-                    {
-                        sauce[i] = "";
-                    }
-                }
-                else if (sauce[i].Equals("BTW"))
-                {
-                    sauce[i] = "//";
-                }
-                else if (sauce[i].Equals("OBTW"))
-                {
-                    sauce[i] = "/*";
-                }
-                else if (sauce[i].Equals("TLDR"))
-                {
-                    sauce[i] = "*/";
-                }
-                else if (sauce[i].Equals("I") && sauce[i + 1].Equals("HAS") && sauce[i + 2].Equals("A"))
-                {
-                    if (sauce[i + 4].Equals("ITZ"))
-                    {
-                        sauce[i] = "var " + sauce[i + 3] + "= " + sauce[i + 5] + ";";
-                        sauce[i + 1] = String.Empty;
-                        sauce[i + 2] = String.Empty;
-                        sauce[i + 3] = String.Empty;
-                        sauce[i + 4] = String.Empty;
-                        sauce[i + 5] = String.Empty;
-                    }
-                    else
-                    {
-                        sauce[i] = "var " + sauce[i + 3] + ";";
-                        sauce[i + 1] = String.Empty;
-                        sauce[i + 2] = String.Empty;
-                        sauce[i + 3] = String.Empty;
-                    }
-                }
-                else if (sauce[i].Equals("R"))
-                {
-                    sauce[i - 1] = sauce[i - 1] + " = " + sauce[i + 1] + ";";
-                    sauce[i] = string.Empty;
-                    sauce[i + 1] = String.Empty;
-                }
-                else if (sauce[i].Equals("WIN"))
-                {
-                    sauce[i] = "true";
-                }
-                else if (sauce[i].Equals("FAIL"))
-                {
-                    sauce[i] = "false";
-                }
+                return new SyntaxErrorException("No 'Hai 1.2' starting command!").ToString();
             }
-            return sauce;
+            Sauce = Sauce.Remove(0, 7);
+            if (!Sauce.EndsWith("KTHXBYE"))
+            {
+                return new SyntaxErrorException("No KTHXBYE ending command!").ToString();
+            }
+            else
+            {
+                Sauce = Sauce.Remove(Sauce.Length - 8);
+            }
+            
+            #region Pattern
+            pattern.Add(@"I HAS A ([a-zA-Z]+)( ITZ )([a-zA-Z0-9\.]+)"); //Variable declaration and init
+            pattern.Add(@"I HAS A ([a-zA-Z]+)"); //Only declaration
+            pattern.Add(@"([a-zA-Z]+) R (""?[a - zA - Z0 - 9\.] + ""?)"); //only init
+            pattern.Add(@",? *	*BTW"); //One line comment
+            pattern.Add(@",? *	*OBTW"); //Multi line comment 1.
+            pattern.Add(@",? *	*TLDR"); //Multi line comment 2.
+            pattern.Add(@"WIN"); //truec
+            pattern.Add(@"FAIL"); //false
+            pattern.Add(@","); //Line breaks
+            pattern.Add(@"YARN"); //String
+            pattern.Add(@"NUMBR"); //int
+            pattern.Add(@"NUMBAR"); //float
+            pattern.Add(@"TROOF"); //bool
+            pattern.Add(@"NOOB"); //untyped
+            pattern.Add(@"(""[a-zA-Z0-9.]*)(:\))([a-zA-Z0-9.]*"")"); //newline in String
+            pattern.Add(@"(""[a-zA-Z0-9.]*)(:\>)([a-zA-Z0-9.]*"")"); //tab in String
+            pattern.Add(@"(""[a-zA-Z0-9.]*)(:o)([a-zA-Z0-9.]*"")"); //beep in String
+            pattern.Add(@"(""[a-zA-Z0-9.]*)(:"")([a-zA-Z0-9.]*"")"); //literal quote in String
+            pattern.Add(@"(""[a-zA-Z0-9.]*)(::)([a-zA-Z0-9.]*"")"); //: in String
+            pattern.Add(Util.Util.getNewLineInString(Sauce) + @"? *   *(\.\.\.) ?" + Util.Util.getNewLineInString(Sauce) + @" *   *([a-zA-Z0-9 .]+)"); //Line continuation
+            pattern.Add(@"[^{};](" + Util.Util.getNewLineInString(Sauce) + @")"); //obvsl new line
+            #endregion
+            #region replacements
+            replacements.Add(@"var $1 = $2;" + Util.Util.getNewLine());
+            replacements.Add(@"var $1;" + Util.Util.getNewLine());
+            replacements.Add(@"$1 = $2;" + Util.Util.getNewLine());
+            replacements.Add(@"//");
+            replacements.Add(@"/\*");
+            replacements.Add(@"\*/");
+            replacements.Add(@"true");
+            replacements.Add(@"false");
+            replacements.Add(Util.Util.getNewLine());
+            replacements.Add(@"$2");
+            replacements.Add(@";" + Util.Util.getNewLine());
+            #endregion
+
+            for (int i = 0; i < pattern.Count; i++)
+            {
+                Sauce = Regex.Replace(Sauce, pattern[i], replacements[i]);
+            }
+
+            return Sauce;
         }
     }
 }

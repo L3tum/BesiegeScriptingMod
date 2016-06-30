@@ -16,6 +16,9 @@ namespace BesiegeScriptingLoadingMod
         private Type bsmType;
         private Key Key = new Key(KeyCode.LeftControl, KeyCode.L);
         private Key selecting = new Key(KeyCode.LeftControl, KeyCode.Mouse2);
+        private Key settingsGUI = new Key(KeyCode.LeftAlt, KeyCode.L);
+        private Key blockInfo = new Key(KeyCode.LeftAlt, KeyCode.Mouse2);
+
         private String str = "";
 
         private readonly List<String> _list = new List<string>()
@@ -42,6 +45,8 @@ namespace BesiegeScriptingLoadingMod
             File.Copy(Resource + "Plugins/x86/lua52.dll", str + "lua52.dll", true); 
             Key = Keybindings.AddKeybinding("Open scripting mod", Key);
             selecting = Keybindings.AddKeybinding("Selected gameobject", selecting);
+            settingsGUI = Keybindings.AddKeybinding("Settings GUI", settingsGUI);
+            blockInfo = Keybindings.AddKeybinding("Block Info", blockInfo);
             Commands.RegisterCommand("ScaleX", ScaleX, "Scales width of the Scripting Mod");
             Commands.RegisterCommand("ScaleY", ScaleY, "Scales heigth of the Scripting Mod");
             foreach (string s in _list)
@@ -51,7 +56,7 @@ namespace BesiegeScriptingLoadingMod
             Assembly mod = Assembly.LoadFrom(Resource + "BesiegeScriptingMod.dll");
             bsmType = mod.GetType("BesiegeScriptingMod.BesiegeScriptingMod");
             bsm = Activator.CreateInstance(bsmType);
-            bsmType.GetMethod("OnLoad").Invoke(bsm, new object[]{Key, selecting});
+            bsmType.GetMethod("OnLoad").Invoke(bsm, new object[]{Key, selecting, settingsGUI, blockInfo});
         }
 
         private string ScaleY(string[] args, IDictionary<string, string> namedArgs)
@@ -68,7 +73,7 @@ namespace BesiegeScriptingLoadingMod
 
         public override void OnUnload()
         {
-            File.Copy(str + "lua52.dll", Resource + "Plugins/x86/lua52.dll");
+            File.Delete(str + "lua52.dll");
             bsmType.GetMethod("OnUnload").Invoke(bsm, null);
         }
 
@@ -77,5 +82,6 @@ namespace BesiegeScriptingLoadingMod
         public override string Author => "JadedMortimer aka. Letum";
         public override Version Version => new Version(0, 1, 1);
         public override bool CanBeUnloaded => true;
+        public override bool Preload => true;
     }
 }

@@ -1,8 +1,7 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Text;
 
-namespace ICSharpCode.PythonBinding
+namespace BesiegeScriptingMod.Util
 {
     public class PythonCodeBuilder
     {

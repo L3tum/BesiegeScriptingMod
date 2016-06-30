@@ -1,3 +1,13 @@
+#v.0.1.3 Fixes and Update to Besiege v.0.3
+- Fixed standard Python script errors
+- Rearranged GUI a bit, still WIP
+- Popup when Brainfuck or Ook wants a keyboard input
+- Updated to Besiege v.0.3
+- Added TrumpScript
+- Fixed Bug where saved Scripts are saved wrong
+- Known Bug: Standard Ook script is using way too many keyboard inputs, consider writing it yourself again
+- Known Bug: TrumpScript might not support every method, due to how it works with words
+
 #v.0.1.2 Fixes and small updates
 - Fixed Lua not working
 - Fixed Python expecting an intended String

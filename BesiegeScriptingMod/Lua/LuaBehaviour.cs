@@ -1,30 +1,38 @@
 ﻿using System;
+using BesiegeScriptingMod.LibrariesForScripts;
 using NLua;
 using UnityEngine;
 
-namespace BesiegeScriptingMod
+namespace BesiegeScriptingMod.Lua
 {
     public class LuaBehaviour : MonoBehaviour
     {
         String source;
-        Lua env;
+        NLua.Lua env;
 
         public void SourceCodening(String sauce)
         {
             this.source = @sauce;
         }
 
-        public void Awakening()
+        public bool Awakening()
         {
             spaar.ModLoader.Game.OnSimulationToggle += GameOnOnSimulationToggle;
             spaar.ModLoader.Game.OnLevelWon += GameOnOnLevelWon;
-            env = new Lua();
+            env = new NLua.Lua();
             env.LoadCLRPackage();
             env["this"] = this; // Give the script access to the gameobject.
             env["transform"] = transform;
             env["gameObject"] = gameObject;
             env["enabled"] = enabled;
+            env["useAPI"] = new Action(UseAPI);
+            env["disableAPI"] = new Action(DisableAPI);
 
+            if (Settings.useAPI)
+            {
+                Besiege.SetUp();
+                env["besiege"] = Besiege._besiege;
+            }
             try
             {
                 env.DoString(source);
@@ -32,8 +40,10 @@ namespace BesiegeScriptingMod
             catch (NLua.Exceptions.LuaException e)
             {
                 Debug.LogError(FormatException(e), context: gameObject);
+                return false;
             }
             Call("Awake");
+            return true;
         }
 
         private void GameOnOnLevelWon()
@@ -84,6 +94,19 @@ namespace BesiegeScriptingMod
         public void OnDestroy()
         {
             Call("OnDestroy");
+        }
+
+        void UseAPI()
+        {
+            Settings.useAPI = true;
+            Besiege.SetUp();
+            env["besiege"] = Besiege._besiege;
+        }
+
+        void DisableAPI()
+        {
+            Settings.useAPI = false;
+            env["besiege"] = null;
         }
 
         public System.Object[] Call(string function, params System.Object[] args)

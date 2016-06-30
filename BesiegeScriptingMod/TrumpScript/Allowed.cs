@@ -7,25 +7,57 @@ namespace BesiegeScriptingMod.TrumpScript
 {
     class Allowed
     {
-        public Dictionary<String, String> Errors = new Dictionary<string, string>()
+        public readonly Dictionary<String, String> Errors = new Dictionary<string, string>()
         {
             {"unterminated_quote", "And, believe me, if I win, if I become President, that will end. Anyone who thinks my story is near over is sadly mistaken."},
-            {"nonword", "This is a country where we speak English." + Util.getNewLine() + "We have a country where to assimilate you have to speak English."},
+            {"nonword", "This is a country where we speak English." + Util.Util.getNewLine() + "We have a country where to assimilate you have to speak English."},
             {"badword", "Trump doesn't want to hear it"},
             {
-                "default", "You know, it really doesn’t matter what the media write as long as you’ve got a young and beautiful piece of ass." + Util.getNewLine() +
-                           "The concept of global warming was created by and for the Chinese in order to make U.S. manufacturing non-competitive." + Util.getNewLine() +
+                "default", "You know, it really doesn’t matter what the media write as long as you’ve got a young and beautiful piece of ass." + Util.Util.getNewLine() +
+                           "The concept of global warming was created by and for the Chinese in order to make U.S. manufacturing non-competitive." + Util.Util.getNewLine() +
                            " Listen you motherfucker, we're going to tax you 25 percent!"
             },
             {"boycott", "Mac? 'Boycott all Apple products  until such time as Apple gives cellphone info to authorities regarding radical Islamic terrorist couple from Cal'"},
             {"freedom", "Trump will ensure that 'America is great'"},
-            {"too_small", "I'm really rich." + Util.getNewLine() + "Part of the beauty of me is I'm very rich."},
+            {"too_small", "I'm really rich." + Util.Util.getNewLine() + "Part of the beauty of me is I'm very rich."},
         };
 
         #region vocabulary
 
         public List<String> vocabulary = new List<string>()
         {
+            "!",
+            ":",
+            ";",
+            ",",
+            "+",
+            "-",
+            "*",
+            "/",
+            "plus",
+            "minus",
+            "times",
+            "over",
+            "less",
+            "fewer",
+            "smaller",
+            "more", 
+            "greater",
+            "larger",
+            "now,;:",
+            "now,;",
+            "now,",
+            "Starting",
+            "Updateing",
+            "LateUpdateing",
+            "FixedUpdateing",
+            "OnGUIing",
+            "Awakeing",
+            "OnLevelWasLoadeding",
+            "OnDestroying",
+            "OnLevelWoning",
+            "OnSimulationToggleing",
+            "void",
             "hillary",
             "clinton",
             "martin",
@@ -209,7 +241,7 @@ namespace BesiegeScriptingMod.TrumpScript
             "give",
             "our",
             "under",
-            "name",
+            "Name",
             "very",
             "through",
             "just",
@@ -2308,7 +2340,7 @@ namespace BesiegeScriptingMod.TrumpScript
             "national",
             "names",
             "named",
-            "name",
+            "Name",
             "murderers",
             "move",
             "morally",
@@ -3995,7 +4027,7 @@ namespace BesiegeScriptingMod.TrumpScript
             "must",
             "my",
             "myself",
-            "name",
+            "Name",
             "named",
             "names",
             "nation",

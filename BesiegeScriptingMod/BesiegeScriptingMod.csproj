@@ -97,6 +97,8 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
@@ -111,7 +113,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BesiegeScriptingMod.cs" />
-    <Compile Include="OokAndBrainfuckBehaviour.cs" />
+    <Compile Include="Brainfuck\BrainfuckBehaviour.cs" />
+    <Compile Include="Extensions\LanguageExtension.cs" />
+    <Compile Include="Language.cs" />
     <Compile Include="Chef\Chef.cs" />
     <Compile Include="Chef\ChefException.cs" />
     <Compile Include="Chef\ChefGUI.cs" />
@@ -129,8 +133,9 @@
     <Compile Include="KeraLua\LuaTag.cs" />
     <Compile Include="KeraLua\NativeMethods.cs" />
     <Compile Include="KeraLua\Platform\CLSCompliantAttribute.cs" />
+    <Compile Include="LibrariesForScripts\Besiege.cs" />
     <Compile Include="LolCode\LolcodeInterpreter.cs" />
-    <Compile Include="LuaBehaviour.cs" />
+    <Compile Include="Lua\LuaBehaviour.cs" />
     <Compile Include="NLua\CheckType.cs" />
     <Compile Include="NLua\Config\NLuaConfig.cs" />
     <Compile Include="NLua\Event\DebugHookEventArgs.cs" />
@@ -172,18 +177,21 @@
     <Compile Include="NLua\ObjectTranslatorPool.cs" />
     <Compile Include="NLua\Platform\BindFlags.cs" />
     <Compile Include="NLua\Platform\CLSCompliantAttribute.cs" />
-    <Compile Include="NRefactoryToPythonConverter.cs" />
+    <Compile Include="Ook\OokBehaviour.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="NLua\ProxyType.cs" />
-    <Compile Include="PythonBehaviour.cs" />
-    <Compile Include="PythonCodeBuilder.cs" />
-    <Compile Include="PythonConstructorInfo.cs" />
+    <Compile Include="Python\PythonBehaviour.cs" />
     <Compile Include="Script.cs" />
     <Compile Include="ScriptHandler.cs" />
+    <Compile Include="Settings.cs" />
+    <Compile Include="SettingsGUI.cs" />
     <Compile Include="TrumpScript\Allowed.cs" />
     <Compile Include="TrumpScript\TrumpScript.cs" />
-    <Compile Include="Tuple.cs" />
-    <Compile Include="Util.cs" />
+    <Compile Include="Util\NRefactoryToPythonConverter.cs" />
+    <Compile Include="Util\PythonCodeBuilder.cs" />
+    <Compile Include="Util\PythonConstructorInfo.cs" />
+    <Compile Include="Util\Tuple.cs" />
+    <Compile Include="Util\Util.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -706,6 +714,10 @@
     <Content Include="Lib\__phello__.foo.py" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy /Y "$(TargetDir)$(ProjectName).dll" "$(SolutionDir)Scripts\Resource\$(ProjectName).dll"
+copy /Y "$(TargetDir)$(ProjectName).dll" "E:\Steeam\steamapps\common\Besiege\Besiege_Data\Mods\Scripts\Resource\$(ProjectName).dll"</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

@@ -1,16 +1,15 @@
-﻿using ICSharpCode.NRefactory;
-using ICSharpCode.NRefactory.Ast;
-using ICSharpCode.NRefactory.Parser;
-using ICSharpCode.NRefactory.PrettyPrinter;
-using ICSharpCode.NRefactory.Visitors;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Reflection;
 using System.Text;
+using BesiegeScriptingMod.Python;
+using ICSharpCode.NRefactory;
+using ICSharpCode.NRefactory.Ast;
+using ICSharpCode.NRefactory.PrettyPrinter;
+using ICSharpCode.NRefactory.Visitors;
 
-namespace ICSharpCode.PythonBinding
+namespace BesiegeScriptingMod.Util
 {
     public class NRefactoryToPythonConverter : NodeTrackingAstVisitor, IOutputFormatter
     {
