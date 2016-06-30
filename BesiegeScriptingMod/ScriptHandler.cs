@@ -589,7 +589,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     }
                 }
             }
-            else if (Input.GetKeyDown(KeyCode.Mouse2))
+            else if (Input.GetKeyDown(_selecting.Trigger))
             {
                 RaycastHit hit;
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
