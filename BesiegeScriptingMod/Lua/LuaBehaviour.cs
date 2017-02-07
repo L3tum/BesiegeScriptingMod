@@ -1,24 +1,30 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using BesiegeScriptingMod.LibrariesForScripts;
 using NLua;
+using NLua.Exceptions;
+using spaar.ModLoader;
 using UnityEngine;
+
+#endregion
 
 namespace BesiegeScriptingMod.Lua
 {
     public class LuaBehaviour : MonoBehaviour
     {
-        String source;
-        NLua.Lua env;
+        private NLua.Lua env;
+        private string source;
 
-        public void SourceCodening(String sauce)
+        public void SourceCodening(string sauce)
         {
-            this.source = @sauce;
+            source = @sauce;
         }
 
         public bool Awakening()
         {
-            spaar.ModLoader.Game.OnSimulationToggle += GameOnOnSimulationToggle;
-            spaar.ModLoader.Game.OnLevelWon += GameOnOnLevelWon;
+            Game.OnSimulationToggle += GameOnOnSimulationToggle;
+            Game.OnLevelWon += GameOnOnLevelWon;
             env = new NLua.Lua();
             env.LoadCLRPackage();
             env["this"] = this; // Give the script access to the gameobject.
@@ -37,9 +43,9 @@ namespace BesiegeScriptingMod.Lua
             {
                 env.DoString(source);
             }
-            catch (NLua.Exceptions.LuaException e)
+            catch (LuaException e)
             {
-                Debug.LogError(FormatException(e), context: gameObject);
+                Debug.LogError(FormatException(e), gameObject);
                 return false;
             }
             Call("Awake");
@@ -56,37 +62,37 @@ namespace BesiegeScriptingMod.Lua
             Call("OnSimulationToggle", simulating);
         }
 
-        void Awake()
+        private void Awake()
         {
             Call("Awake");
         }
 
-        void Start()
+        private void Start()
         {
             Call("Start");
         }
 
-        void Update()
+        private void Update()
         {
             Call("Update");
         }
 
-        void OnGUI()
+        private void OnGUI()
         {
             Call("OnGUI");
         }
 
-        void FixedUpdate()
+        private void FixedUpdate()
         {
             Call("FixedUpdate");
         }
 
-        void LateUpdate()
+        private void LateUpdate()
         {
             Call("LateUpdate");
         }
 
-        void OnLevelWasLoaded(int level)
+        private void OnLevelWasLoaded(int level)
         {
             Call("OnLevelWasLoaded", level);
         }
@@ -96,22 +102,22 @@ namespace BesiegeScriptingMod.Lua
             Call("OnDestroy");
         }
 
-        void UseAPI()
+        private void UseAPI()
         {
             Settings.useAPI = true;
             Besiege.SetUp();
             env["besiege"] = Besiege._besiege;
         }
 
-        void DisableAPI()
+        private void DisableAPI()
         {
             Settings.useAPI = false;
             env["besiege"] = null;
         }
 
-        public System.Object[] Call(string function, params System.Object[] args)
+        public object[] Call(string function, params object[] args)
         {
-            System.Object[] result = new System.Object[0];
+            object[] result = new object[0];
             if (env == null) return result;
             LuaFunction lf = env.GetFunction(function);
             if (lf == null) return result;
@@ -121,11 +127,12 @@ namespace BesiegeScriptingMod.Lua
                 {
                     result = lf.Call(args);
                 }
-                else {
+                else
+                {
                     result = lf.Call();
                 }
             }
-            catch (NLua.Exceptions.LuaException e)
+            catch (LuaException e)
             {
                 Debug.LogError(FormatException(e), gameObject);
                 throw e;
@@ -133,14 +140,14 @@ namespace BesiegeScriptingMod.Lua
             return result;
         }
 
-        public System.Object[] Call(string function)
+        public object[] Call(string function)
         {
             return Call(function, null);
         }
 
-        public static string FormatException(NLua.Exceptions.LuaException e)
+        public static string FormatException(LuaException e)
         {
-            string source = (string.IsNullOrEmpty(e.Source)) ? "<no source>" : e.Source.Substring(0, e.Source.Length - 2);
+            string source = string.IsNullOrEmpty(e.Source) ? "<no source>" : e.Source.Substring(0, e.Source.Length - 2);
             return string.Format("{0}\nLua (at {2})", e.Message, string.Empty, source);
         }
     }

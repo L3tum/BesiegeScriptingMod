@@ -24,27 +24,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-using System;
-using System.IO;
-using System.Runtime.InteropServices;
+
 #if !SILVERLIGHT && !NETFX_CORE
-using System.Runtime.Serialization.Formatters.Binary;
 #endif
-using NLua.Extensions;
 
 namespace NLua
 {
-	public enum LuaTypes : int
-	{
-		None 			= -1,
-		Nil 			= 0,
-		Boolean 		= 1,
-		LightUserdata	= 2,
-		Number 			= 3,
-		String 			= 4,
-		Table 			= 5,
-		Function 		= 6,
-		UserData 		= 7,
-		Thread 			= 8
-	}
+    public enum LuaTypes
+    {
+        None = -1,
+        Nil = 0,
+        Boolean = 1,
+        LightUserdata = 2,
+        Number = 3,
+        String = 4,
+        Table = 5,
+        Function = 6,
+        UserData = 7,
+        Thread = 8
+    }
 }

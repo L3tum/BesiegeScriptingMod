@@ -1,4 +1,6 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,61 +12,99 @@ using BesiegeScriptingMod.Util;
 using spaar.ModLoader;
 using spaar.ModLoader.UI;
 using UnityEngine;
-using Application = UnityEngine.Application;
-using Debug = UnityEngine.Debug;
-using Screen = UnityEngine.Screen;
+using Component = UnityEngine.Component;
+
+#endregion
 
 namespace BesiegeScriptingMod
 {
     internal class ScriptHandler : MonoBehaviour
     {
-        private readonly int _winId = spaar.ModLoader.Util.GetWindowID();
+        private Texture2D text;
+        private readonly int _blockInfoId = spaar.ModLoader.Util.GetWindowID();
         private readonly int _chooseWinId = spaar.ModLoader.Util.GetWindowID();
+        private readonly Dictionary<GameObject, Tuple<Renderer, Color>> _gos = new Dictionary<GameObject, Tuple<Renderer, Color>>();
         private readonly int _helpId = spaar.ModLoader.Util.GetWindowID();
-        private readonly int _blockInfoID = spaar.ModLoader.Util.GetWindowID();
-        private Vector2 _refPos;
-        private Vector2 _scrollPos = new Vector2(0, Mathf.Infinity);
-        private Rect _chooseRect = new Rect(0, 20.0f, 100.0f, 100.0f);
-        private Rect _bInfoRect;
-        public bool _displayC;
+        private readonly Dictionary<string, Language> _languages = new Dictionary<string, Language>();
+        private readonly int _winId = spaar.ModLoader.Util.GetWindowID();
+        private readonly int _planExID = spaar.ModLoader.Util.GetWindowID();
         private bool _addingRefs;
-        private GUIStyle _toggleStyle;
-        private GUIStyle _labelStyle;
-        private GUIStyle _headlineStyle;
+        private bool _bInfo;
+        private Rect _bInfoRect;
+        private GameObject _block;
+        private Key _blockInfo;
+        private bool _chooseObject;
+        private Rect _chooseRect = new Rect(0, 20.0f, 100.0f, 100.0f);
+
+        public string CSauce = "";
         private GUIStyle _defaultLabel;
+        private GUIStyle _headlineStyle;
         private bool _ideSelection;
         private bool _isLoading;
         private bool _isOpen;
-        private bool _stopScript;
-        private bool _chooseObject;
-        private bool _showObjects;
-        private bool _showGoOptions;
-        private bool _bInfo;
-        private GameObject block;
+        private bool _options;
+        private bool _plannedExec;
+        private Key _key;
+        private GUIStyle _labelStyle;
 
         private string _name = "";
-        private readonly Dictionary<GameObject, Tuple<Renderer, Color>> _gos = new Dictionary<GameObject, Tuple<Renderer, Color>>();
-        private readonly Dictionary<String, Language> _languages = new Dictionary<string, Language>();
-
-        private Dictionary<Tuple<string, GameObject>, Component> AddedScripts =
-            new Dictionary<Tuple<string, GameObject>, Component>();
-
-        public string _cSauce = "";
-        public string Ide = "";
+        private Vector2 _refPos;
         private string _refs;
         private string _sauce = "";
-        private Key _key;
+        private Vector2 _scrollPos = new Vector2(0, Mathf.Infinity);
         private Key _selecting;
         private Key _settingsGui;
-        private Key _blockInfo;
+        private bool _showGoOptions;
+        private bool _showObjects;
+        private bool _stopScript;
+        private GUIStyle _toggleStyle;
+
+        private Dictionary<Tuple<string, GameObject>, Component> _addedScripts =
+            new Dictionary<Tuple<string, GameObject>, Component>();
+
+        private Rect _plannedExecRect = new Rect(200.0f, 200.0f, 100.0f, 200.0f);
+        private readonly Dictionary<PlannedExecEnum, PlannedExecutionWrapper> plannedExecution = new Dictionary<PlannedExecEnum, PlannedExecutionWrapper>(); 
+        private readonly Dictionary<PlannedExecEnum, bool> enums = new Dictionary<PlannedExecEnum, bool>();
+        private Key key1 = new Key(KeyCode.None, KeyCode.None);
+        private bool lastKey;
+        private static KeyCode[] SpecialKeys =
+    {
+      KeyCode.LeftControl, KeyCode.RightControl, KeyCode.LeftShift,
+      KeyCode.RightShift, KeyCode.LeftAlt, KeyCode.RightAlt,
+      KeyCode.Backspace, KeyCode.Mouse0, KeyCode.Mouse1,
+      KeyCode.Mouse2, KeyCode.Mouse3, KeyCode.Mouse4,
+      KeyCode.Mouse5, KeyCode.Mouse6, KeyCode.Alpha0,
+      KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3,
+      KeyCode.Alpha4, KeyCode.Alpha5, KeyCode.Alpha6,
+      KeyCode.Alpha7, KeyCode.Alpha8, KeyCode.Alpha9,
+      KeyCode.F1, KeyCode.F2, KeyCode.F3, KeyCode.F4,
+      KeyCode.F5, KeyCode.F6, KeyCode.F7, KeyCode.F8,
+      KeyCode.F9, KeyCode.F10, KeyCode.F11, KeyCode.F12,
+      KeyCode.F13, KeyCode.F14, KeyCode.F15,
+    };
+
+        public bool DisplayC;
+        public string Ide = "";
         internal string LastTooltip = "";
 
         public void Start()
         {
+            Game.OnSimulationToggle += GameOnOnSimulationToggle;
+            Game.OnBlockPlaced += GameOnOnBlockPlaced;
+            Game.OnBlockRemoved += GameOnOnBlockRemoved;
+            Game.OnLevelWon += GameOnOnLevelWon;
             Settings.Load();
             SettingsGUI sg = gameObject.AddComponent<SettingsGUI>();
             sg.SetKey(_settingsGui);
             LoadLanguages();
+            enums.Add(PlannedExecEnum.OnMachineDestroyed, false);
+            enums.Add(PlannedExecEnum.OnSimulationStart, false);
+            enums.Add(PlannedExecEnum.OnSimulationStop, false);
+            enums.Add(PlannedExecEnum.OnBlockPlaced, false);
+            enums.Add(PlannedExecEnum.OnBlockRemoved, false);
+            enums.Add(PlannedExecEnum.OnKeyPress, false);
+            enums.Add(PlannedExecEnum.OnLevelLoaded, false);
+
             _gos.Add(gameObject, new Tuple<Renderer, Color>(null, Color.clear));
             _refs += Application.dataPath + "/Mods/SpaarModLoader.dll" + Util.Util.getNewLine();
             _refs += Application.dataPath + "/Managed/Assembly-UnityScript.dll" + Util.Util.getNewLine();
@@ -82,8 +122,10 @@ namespace BesiegeScriptingMod
             _languages.Add("UnityScript", new Language("UnityScript", true, "us"));
             _languages.Add("TrumpScript", new Language("TrumpScript", true, "ts"));
             UpdateSauce();
+            text = new Texture2D(0, 0);
+            var bytes = File.ReadAllBytes(Application.dataPath + "/Mods/Scripts/Resource/UI/background.png");
+            text.LoadImage(bytes);
         }
-
         public void SetKeys(Key key, Key key2, Key key3, Key key4)
         {
             _key = key;
@@ -101,14 +143,14 @@ namespace BesiegeScriptingMod
                     _scrollPos.y = Mathf.Infinity;
                 }
                 GUI.skin = ModGUI.Skin;
+                GUI.skin.window.normal.background = text;
                 GUI.skin.textArea.richText = true;
                 _toggleStyle = new GUIStyle(GUI.skin.button) {onNormal = Elements.Buttons.Red.hover};
 
                 _labelStyle = new GUIStyle(GUI.skin.label)
                 {
                     margin =
-                        new RectOffset(left: 10, right: 5, top: GUI.skin.textField.margin.top,
-                            bottom: GUI.skin.textField.margin.bottom),
+                        new RectOffset(10, 5, GUI.skin.textField.margin.top, GUI.skin.textField.margin.bottom),
                     border = GUI.skin.textField.border,
                     alignment = GUI.skin.textField.alignment
                 };
@@ -127,6 +169,7 @@ namespace BesiegeScriptingMod
             else if (_chooseObject)
             {
                 GUI.skin = ModGUI.Skin;
+                GUI.skin.window.normal.background = text;
                 _headlineStyle = new GUIStyle(GUI.skin.label)
                 {
                     fontSize = 16,
@@ -141,11 +184,12 @@ namespace BesiegeScriptingMod
             if (LastTooltip != "")
             {
                 GUI.skin = ModGUI.Skin;
+                GUI.skin.window.normal.background = text;
                 var background = GUI.skin.label.normal.background;
                 _defaultLabel = new GUIStyle(GUI.skin.label)
                 {
                     fontSize = 24,
-                    normal = new GUIStyleState() {background = background, textColor = Color.white}
+                    normal = new GUIStyleState {background = background, textColor = Color.white}
                 };
                 GUILayout.Window(_helpId, new Rect(Input.mousePosition.x, Screen.height - Input.mousePosition.y + 10.0f, 100.0f, 50.0f), HelpFunc, "ToolTip");
             }
@@ -153,14 +197,126 @@ namespace BesiegeScriptingMod
             if (_bInfo)
             {
                 GUI.skin = ModGUI.Skin;
-                _bInfoRect = GUILayout.Window(_blockInfoID, _bInfoRect, BlockInfo, "Block Info");
+                GUI.skin.window.normal.background = text;
+                _bInfoRect = GUILayout.Window(_blockInfoId, _bInfoRect, BlockInfo, "Block Info");
             }
+            if (_plannedExec)
+            {
+                GUI.skin = ModGUI.Skin;
+                GUI.skin.window.normal.background = text;
+                _plannedExecRect = GUILayout.Window(_planExID, _plannedExecRect, PlannedExecFunc, "Planned Execution");
+
+                if (lastKey && !enums[PlannedExecEnum.OnKeyPress])
+                {
+                    _plannedExecRect = new Rect(_plannedExecRect.x, _plannedExecRect.y, 100.0f, 200.0f);
+                }
+                lastKey = enums[PlannedExecEnum.OnKeyPress];
+            }
+        }
+
+        private void PlannedExecFunc(int id)
+        {
+            GUILayout.Label("Triggers", new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 24,
+                alignment = TextAnchor.MiddleCenter,
+            });
+            GUILayout.BeginHorizontal();
+            enums[PlannedExecEnum.OnBlockPlaced] = GUILayout.Toggle(enums[PlannedExecEnum.OnBlockPlaced], new GUIContent("On Block Placed", "Selects 'OnBlockPlaced' as a Trigger for the Script"), _toggleStyle);
+            enums[PlannedExecEnum.OnBlockRemoved] = GUILayout.Toggle(enums[PlannedExecEnum.OnBlockRemoved], new GUIContent("On Block Removed", "Selects 'OnBlockRemoved' as a Trigger for the Script"), _toggleStyle);
+            enums[PlannedExecEnum.OnKeyPress] = GUILayout.Toggle(enums[PlannedExecEnum.OnKeyPress], new GUIContent("On Key Press", "Selects 'On Key Press' as a Trigger for the Script"), _toggleStyle);
+            enums[PlannedExecEnum.OnLevelLoaded] = GUILayout.Toggle(enums[PlannedExecEnum.OnLevelLoaded], new GUIContent("On Level Loaded", "Selects 'On Level Loaded' as a Trigger for the Script"), _toggleStyle);
+            enums[PlannedExecEnum.OnMachineDestroyed] = GUILayout.Toggle(enums[PlannedExecEnum.OnMachineDestroyed], new GUIContent("On Machine Destroyed", "Selects 'On Machine Destroyed' as a Trigger for the Script"), _toggleStyle);
+            enums[PlannedExecEnum.OnSimulationStart] = GUILayout.Toggle(enums[PlannedExecEnum.OnSimulationStart], new GUIContent("On Simulation Start", "Selects 'On Simulation Start' as a Trigger for the Script"), _toggleStyle);
+            enums[PlannedExecEnum.OnSimulationStop] = GUILayout.Toggle(enums[PlannedExecEnum.OnSimulationStop], new GUIContent("On Simulation Stop", "Selects 'On Simulation Stop' as a Trigger for the Script"), _toggleStyle);
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(25.0f);
+            GUILayout.Label("", GUI.skin.horizontalSlider);
+
+            if (enums[PlannedExecEnum.OnKeyPress])
+            {
+                GUILayout.Space(25.0f);
+                GUILayout.Label("Select the Keys for triggering the Script", new GUIStyle(GUI.skin.label) { fontSize = 24, alignment = TextAnchor.MiddleCenter });
+                GUILayout.Space(25.0f);
+                GUILayout.BeginHorizontal();
+                GUILayout.Label(@"Modifier:", new GUIStyle(GUI.skin.label) { fontSize = 22, alignment = TextAnchor.MiddleRight});
+                GUILayout.Label(new GUIContent(key1.Modifier.ToString(), "Modifier"), new GUIStyle(GUI.skin.label) { fontSize = 22, alignment = TextAnchor.MiddleLeft});
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label(@"Trigger:", new GUIStyle(GUI.skin.label) { fontSize = 22, alignment = TextAnchor.MiddleRight});
+                GUILayout.Label(new GUIContent(key1.Trigger.ToString(), "Trigger"), new GUIStyle(GUI.skin.label) { fontSize = 22, alignment = TextAnchor.MiddleLeft});
+                GUILayout.EndHorizontal();
+
+                if (Event.current.type == EventType.Repaint)
+                {
+                    if (GUI.tooltip != "")
+                    {
+                        if (Input.inputString.Length > 0 && !Input.inputString.Contains('\u0008' + ""))
+                        {
+                            if (GUI.tooltip == "Modifier")
+                            {
+                                key1.Modifier = (KeyCode)Enum.Parse(typeof(KeyCode), (Input.inputString[0] + "").ToUpper());
+                            }
+                            else if (GUI.tooltip == "Trigger")
+                            {
+                                key1.Trigger = (KeyCode)Enum.Parse(typeof(KeyCode), (Input.inputString[0] + "").ToUpper());
+                            }
+                        }
+                        KeyCode keyCode = KeyCode.None;
+
+                        foreach (var key in SpecialKeys)
+                        {
+                            if (Input.GetKeyDown(key))
+                            {
+                                keyCode = key;
+                                break;
+                            }
+                        }
+
+                        if (keyCode != KeyCode.None)
+                        {
+                            if (GUI.tooltip == "Modifier")
+                            {
+                                key1.Modifier = keyCode == KeyCode.Backspace ? KeyCode.None : keyCode;
+                            }
+                            else if (GUI.tooltip == "Trigger")
+                            {
+                                key1.Trigger = keyCode == KeyCode.Backspace ? KeyCode.None : keyCode;
+                            }
+                        }
+                    }
+                }
+                GUILayout.Space(25.0f);
+                GUILayout.Label("", GUI.skin.horizontalSlider);
+            }
+
+            GUILayout.Space(25.0f);
+            GUILayout.Label(new GUIContent("Saved Scripts", "The Scripts you can plan to execute"), new GUIStyle(GUI.skin.label) { fontSize = 24, alignment = TextAnchor.MiddleCenter });
+
+            foreach (FileInfo fileInfo in new DirectoryInfo(_languages[Ide]._folder).GetFiles("*" + _languages[Ide]._extensionDot))
+            {
+                if (GUILayout.Button(fileInfo.Name.Replace(_languages[Ide]._extensionDot, "")))
+                {
+                    foreach (var @enum in enums)
+                    {
+                        if (@enum.Value)
+                        {
+                            plannedExecution.Add(@enum.Key, new PlannedExecutionWrapper(_sauce, _refs, _name, _gos.Keys.ToList(), Ide, key1));
+                        }
+                    }
+                }
+            }
+            GUILayout.Space(25.0f);
+
+            LastTooltip = GUI.tooltip;
+            GUI.DragWindow();
         }
 
         private void BlockInfo(int id)
         {
-            BlockBehaviour bb = block.GetComponent<BlockBehaviour>();
-            GUILayout.Label("Name: " + block.name);
+            BlockBehaviour bb = _block.GetComponent<BlockBehaviour>();
+            GUILayout.Label("Name: " + _block.name);
             GUILayout.Label("ID: " + bb.GetBlockID());
             GUILayout.Label("GUID: " + bb.Guid);
             GUILayout.Space(25.0f);
@@ -202,88 +358,30 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
 
             GUILayout.BeginHorizontal(GUI.skin.box);
 
-            if (Ide != "")
+            _options = GUILayout.Toggle(_options, new GUIContent("Options", "Opens the options sub-menu"), _toggleStyle);
+            if (_options)
             {
-                #region Execute
-
-                if (GUILayout.Button(new GUIContent("Execute", "Execute your Script. It will be attached to every selected GameObject")))
-                {
-                    Execution();
-                }
-
-                #endregion Execute
-
-                #region Convert
-
-                if (_languages[Ide].needsConvertion)
-                {
-                    if (GUILayout.Button(new GUIContent("Convert", "Convert your Source Code into C# code. This is necessary in order to execute it")))
-                    {
-                        Convertion();
-                    }
-                    _displayC = GUILayout.Toggle(_displayC, new GUIContent("Display C# Source", "You can either display your original source, or the converted source"), _toggleStyle);
-                }
-
-                #endregion
+                _showGoOptions = false;
+                _ideSelection = false;
             }
 
-            //var last = _isSaving;
-            //_isSaving = GUILayout.Toggle(_isSaving, "Save", GUI.skin.button);
-
-            _stopScript = GUILayout.Toggle(_stopScript,
-                new GUIContent("Stop Script", "Shows you a list of running Scripts. If you press the Left Mousebutton while hovering over one, it will be destroyed"), _toggleStyle);
-            if (_stopScript)
-            {
-                _isLoading = false;
-                _addingRefs = false;
-                _chooseObject = false;
-                _showObjects = false;
-            }
-
-            _isLoading = GUILayout.Toggle(_isLoading, new GUIContent("Load", "Shows you a list of available Scripts. The standard Scripts are not included"), _toggleStyle);
-
-            if (_isLoading)
-            {
-                _stopScript = false;
-                _addingRefs = false;
-                _chooseObject = false;
-                _showObjects = false;
-            }
-
-            if (Ide != "")
-            {
-                _addingRefs = GUILayout.Toggle(_addingRefs, new GUIContent("Add references", "Let's you define the libraries you are using in your Script. The most common ones are predefined"),
-                    _toggleStyle);
-                if (_addingRefs)
-                {
-                    _isLoading = false;
-                    _chooseObject = false;
-                    _stopScript = false;
-                    _showObjects = false;
-                }
-            }
-
-            _isOpen = GUILayout.Toggle(_isOpen, new GUIContent("Open/Close Editor", "Opens/Closes the whole editor window"), _toggleStyle);
-            //GUILayout.EndArea();
-
-            GUILayout.EndHorizontal();
-
-            #endregion
-
-            #region Menus
-
-            GUILayout.BeginHorizontal();
             _ideSelection = GUILayout.Toggle(_ideSelection, new GUIContent("IDE[" + Ide + "]", "Select a programming language"), _toggleStyle);
             if (_ideSelection)
             {
                 _showGoOptions = false;
+                _options = false;
             }
 
             _showGoOptions = GUILayout.Toggle(_showGoOptions, new GUIContent("GameObject Options", "Diplays GameObject options"), _toggleStyle);
             if (_showGoOptions)
             {
                 _ideSelection = false;
+                _options = false;
             }
+
+            _isOpen = GUILayout.Toggle(_isOpen, new GUIContent("Open/Close Editor", "Opens/Closes the whole editor window"), _toggleStyle);
+            //GUILayout.EndArea();
+
             GUILayout.EndHorizontal();
 
             #endregion
@@ -308,8 +406,8 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 if (!Settings.LastIde.Equals(Ide))
                 {
                     UpdateSauce();
-                    _cSauce = "";
-                    _displayC = false;
+                    CSauce = "";
+                    DisplayC = false;
                     _ideSelection = false;
                     Settings.LastIde = Ide;
                 }
@@ -344,6 +442,78 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 }
                 GUILayout.EndHorizontal();
             }
+            else if (_options)
+            {
+                GUILayout.BeginHorizontal();
+                if (Ide != "")
+                {
+                    #region Execute
+
+                    if (GUILayout.Button(new GUIContent("Execute", "Execute your Script. It will be attached to every selected GameObject")))
+                    {
+                        Execution();
+                    }
+
+                    #endregion Execute
+
+                    #region Convert
+
+                    if (_languages[Ide].needsConvertion)
+                    {
+                        if (GUILayout.Button(new GUIContent("Convert", "Convert your Source Code into C# code. This is necessary in order to execute it")))
+                        {
+                            Convertion();
+                        }
+                        DisplayC = GUILayout.Toggle(DisplayC, new GUIContent("Display C# Source", "You can either display your original source, or the converted source"), _toggleStyle);
+                    }
+
+                    #endregion
+                }
+
+                //var last = _isSaving;
+                //_isSaving = GUILayout.Toggle(_isSaving, "Save", GUI.skin.button);
+
+                _stopScript = GUILayout.Toggle(_stopScript,
+                    new GUIContent("Stop Script", "Shows you a list of running Scripts. If you press the Left Mousebutton while hovering over one, it will be destroyed"), _toggleStyle);
+                if (_stopScript)
+                {
+                    _isLoading = false;
+                    _addingRefs = false;
+                    _chooseObject = false;
+                    _showObjects = false;
+                }
+
+                if (Ide != "")
+                {
+                    _addingRefs = GUILayout.Toggle(_addingRefs, new GUIContent("Add references", "Let's you define the libraries you are using in your Script. The most common ones are predefined"),
+                        _toggleStyle);
+                    if (_addingRefs)
+                    {
+                        _isLoading = false;
+                        _chooseObject = false;
+                        _stopScript = false;
+                        _showObjects = false;
+                    }
+                }
+
+                _plannedExec = GUILayout.Toggle(_plannedExec, new GUIContent("Plan execution", "Let's you plan the execution of a Script you previously saved"), _toggleStyle);
+
+                if (Ide != "" && _sauce != "" && _name != "" && GUILayout.Button(new GUIContent("Save", "Saves the currently open Script")))
+                {
+                    _languages[Ide].SaveSourceToFile(_sauce, _name);
+                    _languages[Ide].SaveRefToFile(_refs, _name);
+                }
+
+                _isLoading = GUILayout.Toggle(_isLoading, new GUIContent("Load", "Shows you a list of available Scripts. The standard Scripts are not included"), _toggleStyle);
+                if (_isLoading)
+                {
+                    _stopScript = false;
+                    _addingRefs = false;
+                    _chooseObject = false;
+                    _showObjects = false;
+                }
+                GUILayout.EndHorizontal();
+            }
 
             #endregion
 
@@ -353,9 +523,9 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
             {
                 GUILayout.Label(Ide.Equals("") ? "Help" : "Source Code Editor", _headlineStyle);
                 _scrollPos = GUILayout.BeginScrollView(_scrollPos);
-                if (_displayC)
+                if (DisplayC)
                 {
-                    _cSauce = GUILayout.TextArea(_cSauce);
+                    CSauce = GUILayout.TextArea(CSauce);
                 }
                 else
                 {
@@ -388,25 +558,25 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
             {
                 GUILayout.Label("Stop Scripts", _headlineStyle);
                 _scrollPos = GUILayout.BeginScrollView(_scrollPos);
-                if (AddedScripts.Count > 0)
+                if (_addedScripts.Count > 0)
                 {
-                    List<Tuple<String, GameObject>> list = new List<Tuple<String, GameObject>>();
-                    for (int i = 0; i < AddedScripts.Count; i++)
+                    List<Tuple<string, GameObject>> list = new List<Tuple<string, GameObject>>();
+                    for (int i = 0; i < _addedScripts.Count; i++)
                     {
-                        if (AddedScripts.Values.ElementAt(i) == null) continue;
+                        if (_addedScripts.Values.ElementAt(i) == null) continue;
                         if (
-                            GUILayout.Button(AddedScripts.Keys.ElementAt(i).First + ", GameObject:" +
-                                             AddedScripts.Keys.ElementAt(i).Second.name))
+                            GUILayout.Button(_addedScripts.Keys.ElementAt(i).First + ", GameObject:" +
+                                             _addedScripts.Keys.ElementAt(i).Second.name))
                         {
-                            Destroy(AddedScripts.Values.ElementAt(i));
-                            list.Add(AddedScripts.Keys.ElementAt(i));
+                            Destroy(_addedScripts.Values.ElementAt(i));
+                            list.Add(_addedScripts.Keys.ElementAt(i));
                         }
                     }
                     if (list.Count > 0)
                     {
                         foreach (Tuple<string, GameObject> tuple in list)
                         {
-                            AddedScripts.Remove(tuple);
+                            _addedScripts.Remove(tuple);
                         }
                     }
                 }
@@ -514,7 +684,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
             else if (_isLoading)
             {
                 _scrollPos = GUILayout.BeginScrollView(_scrollPos);
-                List<String> toRemove = new List<string>();
+                List<string> toRemove = new List<string>();
                 foreach (var script in _languages[Ide].Scripts)
                 {
                     if (GUILayout.Button(script.Key))
@@ -533,7 +703,6 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
             }
 
             #endregion
-
             LastTooltip = GUI.tooltip;
             GUI.DragWindow();
         }
@@ -556,7 +725,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         {
                             current = current.parent;
                         }
-                        block = current.gameObject;
+                        _block = current.gameObject;
                         _bInfo = true;
                     }
                 }
@@ -573,7 +742,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     if (hit.collider != null)
                     {
                         Transform current = hit.transform;
-                        while (current.parent.name != "Building Machine" && current.parent.name != "Simulation Machine"  && current.parent != null)
+                        while (current.parent.name != "Building Machine" && current.parent.name != "Simulation Machine" && current.parent != null)
                         {
                             current = current.parent;
                         }
@@ -584,7 +753,12 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         }
                         else
                         {
-                            _gos.Add(go, new Tuple<Renderer, Color>(go.GetComponent<Renderer>() ? go.GetComponent<Renderer>() : go.GetComponentInChildren<Renderer>() ? go.GetComponentInChildren<Renderer>() : null, go.GetComponent<Renderer>() ? go.GetComponent<Renderer>().material.color : go.GetComponentInChildren<Renderer>() ? go.GetComponentInChildren<Renderer>().material.color : Color.clear));
+                            _gos.Add(go,
+                                new Tuple<Renderer, Color>(
+                                    go.GetComponent<Renderer>() ? go.GetComponent<Renderer>() : go.GetComponentInChildren<Renderer>() ? go.GetComponentInChildren<Renderer>() : null,
+                                    go.GetComponent<Renderer>()
+                                        ? go.GetComponent<Renderer>().material.color
+                                        : go.GetComponentInChildren<Renderer>() ? go.GetComponentInChildren<Renderer>().material.color : Color.clear));
                         }
                     }
                 }
@@ -604,7 +778,12 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                         }
                         GameObject go = current.gameObject;
                         _gos.Clear();
-                        _gos.Add(go, new Tuple<Renderer, Color>(go.GetComponent<Renderer>() ? go.GetComponent<Renderer>() : go.GetComponentInChildren<Renderer>() ? go.GetComponentInChildren<Renderer>() : null, go.GetComponent<Renderer>() ? go.GetComponent<Renderer>().material.color : go.GetComponentInChildren<Renderer>() ? go.GetComponentInChildren<Renderer>().material.color : Color.clear));
+                        _gos.Add(go,
+                            new Tuple<Renderer, Color>(
+                                go.GetComponent<Renderer>() ? go.GetComponent<Renderer>() : go.GetComponentInChildren<Renderer>() ? go.GetComponentInChildren<Renderer>() : null,
+                                go.GetComponent<Renderer>()
+                                    ? go.GetComponent<Renderer>().material.color
+                                    : go.GetComponentInChildren<Renderer>() ? go.GetComponentInChildren<Renderer>().material.color : Color.clear));
                     }
                 }
             }
@@ -632,22 +811,22 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
         public void OnUnload()
         {
             Settings.Save();
-            if (AddedScripts.Count > 0)
+            if (_addedScripts.Count > 0)
             {
-                List<Tuple<String, GameObject>> list = new List<Tuple<String, GameObject>>();
-                for (int i = 0; i < AddedScripts.Count; i++)
+                List<Tuple<string, GameObject>> list = new List<Tuple<string, GameObject>>();
+                for (int i = 0; i < _addedScripts.Count; i++)
                 {
-                    if (AddedScripts.Values.ElementAt(i) != null)
+                    if (_addedScripts.Values.ElementAt(i) != null)
                     {
-                        Destroy(AddedScripts.Values.ElementAt(i));
-                        list.Add(AddedScripts.Keys.ElementAt(i));
+                        Destroy(_addedScripts.Values.ElementAt(i));
+                        list.Add(_addedScripts.Keys.ElementAt(i));
                     }
                 }
                 if (list.Count > 0)
                 {
                     foreach (Tuple<string, GameObject> tuple in list)
                     {
-                        AddedScripts.Remove(tuple);
+                        _addedScripts.Remove(tuple);
                     }
                 }
             }
@@ -660,22 +839,22 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 Debug.LogError("No Name specified!");
                 return;
             }
-            if (_languages[Ide].needsConvertion && _cSauce == "")
+            if (_languages[Ide].needsConvertion && CSauce == "")
             {
                 Debug.LogError("Please convert your script first!");
                 return;
             }
-            if (AddedScripts.Count > 0)
+            if (_addedScripts.Count > 0)
             {
-                List<Tuple<String, GameObject>> list = new List<Tuple<string, GameObject>>();
-                for (int i = 0; i < AddedScripts.Count; i++)
+                List<Tuple<string, GameObject>> list = new List<Tuple<string, GameObject>>();
+                for (int i = 0; i < _addedScripts.Count; i++)
                 {
-                    if (AddedScripts.Values.ElementAt(i) != null)
+                    if (_addedScripts.Values.ElementAt(i) != null)
                     {
-                        if (AddedScripts.Keys.ElementAt(i).First.Equals(_name))
+                        if (_addedScripts.Keys.ElementAt(i).First.Equals(_name))
                         {
-                            Destroy(AddedScripts.Values.ElementAt(i));
-                            list.Add(AddedScripts.Keys.ElementAt(i));
+                            Destroy(_addedScripts.Values.ElementAt(i));
+                            list.Add(_addedScripts.Keys.ElementAt(i));
                         }
                     }
                 }
@@ -683,14 +862,13 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 {
                     foreach (Tuple<string, GameObject> tuple in list)
                     {
-                        AddedScripts.Remove(tuple);
+                        _addedScripts.Remove(tuple);
                     }
                 }
             }
-            if (!_languages[Ide].Execute(_refs, _languages[Ide].needsConvertion ? _cSauce : _sauce, _gos.Keys.ToList(), _name, ref AddedScripts))
+            if (!_languages[Ide].Execute(_refs, _languages[Ide].needsConvertion ? CSauce : _sauce, _gos.Keys.ToList(), _name, ref _addedScripts))
             {
                 Debug.LogError("Critical error!");
-                return;
             }
 
             #region Java[OBSOLETE]
@@ -740,7 +918,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                     }
                     if (t != null)
                     {
-                        AddedScripts.Add(_name, gameObject.AddComponent(t));
+                        _addedScripts.Add(_name, gameObject.AddComponent(t));
                     }
                     else
                     {
@@ -755,11 +933,11 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
 
         private void Convertion()
         {
-            _cSauce = _languages[Ide].Convert(_sauce, _name, _refs);
-            _displayC = true;
+            CSauce = _languages[Ide].Convert(_sauce, _name, _refs);
+            DisplayC = true;
         }
 
-        private void Loadtion(KeyValuePair<String, Script> script)
+        private void Loadtion(KeyValuePair<string, Script> script)
         {
             var f = new FileInfo(script.Value.sourceFile);
             using (TextReader tr = f.OpenText())
@@ -767,7 +945,7 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                 _sauce = tr.ReadToEnd();
                 _name = script.Key;
             }
-            if (!String.IsNullOrEmpty(script.Value.refFile))
+            if (!string.IsNullOrEmpty(script.Value.refFile))
             {
                 using (TextReader trr = new FileInfo(script.Value.refFile).OpenText())
                 {
@@ -834,11 +1012,11 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
                                 }
                             }
                             var namef = type.GetField("name");
-                            var value = (String) namef.GetValue(namef);
+                            var value = (string) namef.GetValue(namef);
                             var needsConf = type.GetField("needsConvertion");
                             var needsCon = (bool) needsConf.GetValue(needsConf);
                             var extensionf = type.GetField("extension");
-                            var extension = (String) extensionf.GetValue(extensionf);
+                            var extension = (string) extensionf.GetValue(extensionf);
 
                             MethodInfo conMethod = null;
                             if (needsCon)
@@ -863,5 +1041,26 @@ Press " + _key.Modifier + @" + " + _key.Trigger + @" to confirm selection.", _he
         {
             Besiege.OnLevelWasLoaded();
         }
+
+        private void GameOnOnLevelWon()
+        {
+
+        }
+
+        private void GameOnOnBlockRemoved()
+        {
+
+        }
+
+        private void GameOnOnBlockPlaced(Transform block)
+        {
+
+        }
+
+        private void GameOnOnSimulationToggle(bool simulating)
+        {
+
+        }
+
     }
 }

@@ -1,30 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿#region usings
+
+using System;
+
+#endregion
 
 namespace KeraLua
 {
-	public struct LuaState
-	{
+    public struct LuaState
+    {
+        public LuaState(IntPtr ptrState)
+            : this()
+        {
+            state = ptrState;
+        }
 
-		public LuaState (IntPtr ptrState)
-
-			: this ()
-		{
-			state = ptrState;
-		}
-
-		static public implicit operator LuaState (IntPtr ptr)
-		{
-			return new LuaState (ptr);
-		}
+        public static implicit operator LuaState(IntPtr ptr)
+        {
+            return new LuaState(ptr);
+        }
 
 
-		static public implicit operator IntPtr (LuaState luastate)
-		{
-			return luastate.state;
-		}
+        public static implicit operator IntPtr(LuaState luastate)
+        {
+            return luastate.state;
+        }
 
-		IntPtr state;
-	}
+        private readonly IntPtr state;
+    }
 }

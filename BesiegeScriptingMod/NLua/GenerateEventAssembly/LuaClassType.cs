@@ -23,18 +23,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
+#region usings
+
 using System;
+
+#endregion
 
 namespace NLua
 {
-	/*
+    /*
 	 * Structure to store a type and the return types of
 	 * its methods (the type of the returned value and out/ref
 	 * parameters).
 	 */
-	struct LuaClassType
-	{
-		public Type klass;
-		public Type[][] returnTypes;
-	}
+
+    internal struct LuaClassType
+    {
+        public Type klass;
+        public Type[][] returnTypes;
+    }
 }

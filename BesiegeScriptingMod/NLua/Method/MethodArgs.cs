@@ -22,20 +22,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
+#region usings
+
 using System;
+
+#endregion
 
 namespace NLua.Method
 {
-	/*
+    /*
 	 * Parameter information
 	 */
-	struct MethodArgs
-	{
-		// Position of parameter
-		public int index;
-		// Type-conversion function
-		public ExtractValue extractValue;
-		public bool isParamsArray;
-		public Type paramsArrayType;
-	}
+
+    internal struct MethodArgs
+    {
+        // Position of parameter
+        public int index;
+        // Type-conversion function
+        public ExtractValue extractValue;
+        public bool isParamsArray;
+        public Type paramsArrayType;
+    }
 }

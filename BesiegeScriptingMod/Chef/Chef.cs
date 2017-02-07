@@ -1,41 +1,44 @@
-﻿using System;
+﻿#region usings
+
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+
+#endregion
 
 namespace BesiegeScriptingMod.Chef
 {
     public class Chef
     {
-        FileStream file;
-        TextReader scan;
-        Dictionary<String, Recipe> recipes;
-        Recipe mainrecipe;
+        private readonly FileStream file;
+        private readonly Recipe mainrecipe;
+        private readonly Dictionary<string, Recipe> recipes;
+        private readonly TextReader scan;
 
-        public Chef(String filename)
+        public Chef(string filename)
         {
             recipes = new Dictionary<string, Recipe>();
             //System.out.print("Reading recipe(s) from '"+filename+"'.. ");
             file = File.Open(filename, FileMode.OpenOrCreate);
             scan = new StreamReader(file);
-            String lines = scan.ReadToEnd();
-            String[] linees = Regex.Split(lines, "\n\n");
+            string lines = scan.ReadToEnd();
+            string[] linees = Regex.Split(lines, "\n\n");
             int progress = 0;
             Recipe r = null;
             while (progress < linees.Length)
             {
-                String line = linees[progress];
+                string line = linees[progress];
                 if (line.StartsWith("Ingredients"))
                 {
                     if (progress > 3)
-                        throw new ChefException(global::BesiegeScriptingMod.Chef.ChefException.STRUCTURAL, "Read unexpected " + progressToExpected(2) + ". Expecting " + progressToExpected(progress));
+                        throw new ChefException(ChefException.STRUCTURAL, "Read unexpected " + progressToExpected(2) + ". Expecting " + progressToExpected(progress));
                     progress = 3;
                     r.setIngredients(line);
                 }
                 else if (line.StartsWith("Cooking time"))
                 {
                     if (progress > 4)
-                        throw new ChefException(global::BesiegeScriptingMod.Chef.ChefException.STRUCTURAL,
+                        throw new ChefException(ChefException.STRUCTURAL,
                             "Read unexpected " + progressToExpected(3) + ". Expecting " + progressToExpected(progress));
                     progress = 4;
                     r.setCookingTime(line);
@@ -43,7 +46,7 @@ namespace BesiegeScriptingMod.Chef
                 else if (line.StartsWith("Pre-heat oven"))
                 {
                     if (progress > 5)
-                        throw new ChefException(global::BesiegeScriptingMod.Chef.ChefException.STRUCTURAL,
+                        throw new ChefException(ChefException.STRUCTURAL,
                             "Read unexpected " + progressToExpected(4) + ". Expecting " + progressToExpected(progress));
                     progress = 5;
                     r.setOvenTemp(line);
@@ -51,7 +54,7 @@ namespace BesiegeScriptingMod.Chef
                 else if (line.StartsWith("Method"))
                 {
                     if (progress > 5)
-                        throw new ChefException(global::BesiegeScriptingMod.Chef.ChefException.STRUCTURAL,
+                        throw new ChefException(ChefException.STRUCTURAL,
                             "Read unexpected " + progressToExpected(5) + ". Expecting " + progressToExpected(progress));
                     progress = 6;
                     r.setMethod(line);
@@ -59,7 +62,7 @@ namespace BesiegeScriptingMod.Chef
                 else if (line.StartsWith("Serves"))
                 {
                     if (progress != 6)
-                        throw new ChefException(global::BesiegeScriptingMod.Chef.ChefException.STRUCTURAL,
+                        throw new ChefException(ChefException.STRUCTURAL,
                             "Read unexpected " + progressToExpected(6) + ". Expecting " + progressToExpected(progress));
                     progress = 0;
                     r.setServes(line);
@@ -81,29 +84,29 @@ namespace BesiegeScriptingMod.Chef
                     }
                     else
                     {
-                        throw new ChefException(global::BesiegeScriptingMod.Chef.ChefException.STRUCTURAL,
+                        throw new ChefException(ChefException.STRUCTURAL,
                             "Read unexpected comments/title. Expecting " + progressToExpected(progress) + " Hint:" +
                             structHint(progress));
                     }
                 }
             }
             if (mainrecipe == null)
-                throw new ChefException(global::BesiegeScriptingMod.Chef.ChefException.STRUCTURAL, "Recipe empty or title missing!");
+                throw new ChefException(ChefException.STRUCTURAL, "Recipe empty or title missing!");
 
             bake();
             //System.out.println("Done!");
         }
 
-        private String parseTitle(String title)
+        private string parseTitle(string title)
         {
             if (title[title.Length - 1] == '.')
             {
-                title =title.Substring(0, title.Length - 1);
+                title = title.Substring(0, title.Length - 1);
             }
             return title.ToLower();
         }
 
-        private String structHint(int progress)
+        private string structHint(int progress)
         {
             switch (progress)
             {
@@ -115,7 +118,7 @@ namespace BesiegeScriptingMod.Chef
             return "no hint available";
         }
 
-        private String progressToExpected(int progress)
+        private string progressToExpected(int progress)
         {
             switch (progress)
             {

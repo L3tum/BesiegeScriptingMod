@@ -1,35 +1,23 @@
-﻿using System.Collections.Generic;
+﻿#region usings
+
+using System.Collections.Generic;
 using ICSharpCode.NRefactory.Ast;
+
+#endregion
 
 namespace BesiegeScriptingMod.Util
 {
     public class PythonConstructorInfo
     {
-        private ConstructorDeclaration constructor;
-
-        private List<FieldDeclaration> fields = new List<FieldDeclaration>();
-
-        public ConstructorDeclaration Constructor
-        {
-            get
-            {
-                return this.constructor;
-            }
-        }
-
-        public List<FieldDeclaration> Fields
-        {
-            get
-            {
-                return this.fields;
-            }
-        }
-
         private PythonConstructorInfo(ConstructorDeclaration constructor, List<FieldDeclaration> fields)
         {
-            this.constructor = constructor;
-            this.fields = fields;
+            Constructor = constructor;
+            Fields = fields;
         }
+
+        public ConstructorDeclaration Constructor { get; }
+
+        public List<FieldDeclaration> Fields { get; } = new List<FieldDeclaration>();
 
         public static PythonConstructorInfo GetConstructorInfo(TypeDeclaration type)
         {
@@ -49,7 +37,7 @@ namespace BesiegeScriptingMod.Util
                     fieldDeclarations.Add(fieldDeclaration);
                 }
             }
-            if ((fieldDeclarations.Count > 0 ? false : constructorDeclaration == null))
+            if (fieldDeclarations.Count > 0 ? false : constructorDeclaration == null)
             {
                 pythonConstructorInfo = null;
             }

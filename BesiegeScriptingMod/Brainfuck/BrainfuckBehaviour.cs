@@ -1,13 +1,28 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Collections;
 using UnityEngine;
+using Random = System.Random;
+
+#endregion
 
 namespace BesiegeScriptingMod.Brainfuck
 {
-    class BrainfuckBehaviour : MonoBehaviour
+    internal class BrainfuckBehaviour : MonoBehaviour
     {
         private readonly int _popupId = spaar.ModLoader.Util.GetWindowID();
-        Rect _winRect = new Rect(Screen.width / 2.0f - 50.0f, Screen.height / 2.0f - 50.0f, 100.0f, 100.0f);
+        private bool _awaiting;
+        private Random _rand;
+        private Rect _winRect = new Rect(Screen.width/2.0f - 50.0f, Screen.height/2.0f - 50.0f, 100.0f, 100.0f);
+
+        /** The string containing the commands to be executed */
+        private char[] com;
+
+        private int EOF; //End Of File
+
+        /** The instruction pointer */
+        private int ip;
         // Instance info.
         // Instance of Brainfuck interpreter, actually handles interpreting.
 
@@ -16,27 +31,18 @@ namespace BesiegeScriptingMod.Brainfuck
         /** The memory pointer */
         private int mp;
 
-        /** The string containing the commands to be executed */
-        private char[] com;
-
-        /** The instruction pointer */
-        private int ip = 0;
-
-        private int EOF; //End Of File
-
-        public String sauce = "";
-        private System.Random _rand;
-        private bool _awaiting;
+        public string sauce = "";
 
         public void init(string code)
         {
-                mem = new char[30000];
-                mp = 0;
-                com = code.ToCharArray();
-                EOF = com.Length;
-                StartCoroutine_Auto(runBF());
-            _rand = new System.Random(DateTime.Now.Millisecond + DateTime.Now.Second + DateTime.Now.Minute + DateTime.Now.Year + DateTime.Now.Day + DateTime.Now.Hour + DateTime.Now.Month);
+            mem = new char[30000];
+            mp = 0;
+            com = code.ToCharArray();
+            EOF = com.Length;
+            StartCoroutine_Auto(runBF());
+            _rand = new Random(DateTime.Now.Millisecond + DateTime.Now.Second + DateTime.Now.Minute + DateTime.Now.Year + DateTime.Now.Day + DateTime.Now.Hour + DateTime.Now.Month);
         }
+
         public void OnGUI()
         {
             if (_awaiting)
@@ -44,6 +50,7 @@ namespace BesiegeScriptingMod.Brainfuck
                 _winRect = GUI.Window(_popupId, _winRect, Func, "Popup");
             }
         }
+
         private void Func(int id)
         {
             GUILayout.Label("Awaiting input...");
@@ -68,8 +75,8 @@ namespace BesiegeScriptingMod.Brainfuck
 
         public void Done()
         {
-            GetComponent<ScriptHandler>()._cSauce = sauce;
-            GetComponent<ScriptHandler>()._displayC = true;
+            GetComponent<ScriptHandler>().CSauce = sauce;
+            GetComponent<ScriptHandler>().DisplayC = true;
             Destroy(this);
         }
 
@@ -100,7 +107,7 @@ namespace BesiegeScriptingMod.Brainfuck
                         mem[mp]--;
                         break;
                     case '.':
-                        sauce += (mem[mp]);
+                        sauce += mem[mp];
                         break;
                     case ',':
                         int key = _rand.Next();

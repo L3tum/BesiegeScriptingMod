@@ -1,9 +1,7 @@
-﻿
-namespace BesiegeScriptingMod.Chef
+﻿namespace BesiegeScriptingMod.Chef
 {
     public class Component
     {
-
         private Ingredient.State state;
         private int value;
 

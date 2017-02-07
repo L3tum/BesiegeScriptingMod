@@ -23,16 +23,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-using System;
 
 namespace NLua
 {
-	/*
+    /*
 	 * Common interface for types generated from tables. The method
 	 * returns the table that overrides some or all of the type's methods.
 	 */
-	public interface ILuaGeneratedType
-	{
-		LuaTable LuaInterfaceGetLuaTable ();
-	}
+
+    public interface ILuaGeneratedType
+    {
+        LuaTable LuaInterfaceGetLuaTable();
+    }
 }

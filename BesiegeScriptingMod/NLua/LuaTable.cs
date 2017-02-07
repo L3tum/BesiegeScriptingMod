@@ -23,94 +23,102 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-using System;
-using System.Text;
+
+#region usings
+
 using System.Collections;
-using System.Collections.Generic;
+using KeraLua;
+
+#endregion
 
 namespace NLua
 {
-	#if USE_KOPILUA
+#if USE_KOPILUA
 	using LuaCore  = KopiLua.Lua;
 	using LuaState = KopiLua.LuaState;
 	using LuaNativeFunction = KopiLua.LuaNativeFunction;
 	#else
-	using LuaCore  = KeraLua.Lua;
-	using LuaState = KeraLua.LuaState;
-	using LuaNativeFunction = KeraLua.LuaNativeFunction;
-	#endif
 
-	/*
+    #region usings
+
+    using LuaCore = KeraLua.Lua;
+
+    #endregion
+
+#endif
+
+    /*
 	 * Wrapper class for Lua tables
 	 *
 	 * Author: Fabio Mascarenhas
 	 * Version: 1.0
 	 */
-	public class LuaTable : LuaBase
-	{
-		public LuaTable (int reference, Lua interpreter)
-		{
-			_Reference = reference;
-			_Interpreter = interpreter;
-		}
 
-		/*
+    public class LuaTable : LuaBase
+    {
+        public LuaTable(int reference, Lua interpreter)
+        {
+            _Reference = reference;
+            _Interpreter = interpreter;
+        }
+
+        /*
 		 * Indexer for string fields of the table
 		 */
-		public object this [string field] {
-			get {
-				return _Interpreter.GetObject (_Reference, field);
-			}
-			set {
-				_Interpreter.SetObject (_Reference, field, value);
-			}
-		}
 
-		/*
+        public object this[string field]
+        {
+            get { return _Interpreter.GetObject(_Reference, field); }
+            set { _Interpreter.SetObject(_Reference, field, value); }
+        }
+
+        /*
 		 * Indexer for numeric fields of the table
 		 */
-		public object this [object field] {
-			get {
-				return _Interpreter.GetObject (_Reference, field);
-			}
-			set {
-				_Interpreter.SetObject (_Reference, field, value);
-			}
-		}
 
-		public System.Collections.IDictionaryEnumerator GetEnumerator ()
-		{
-			return _Interpreter.GetTableDict (this).GetEnumerator ();
-		}
+        public object this[object field]
+        {
+            get { return _Interpreter.GetObject(_Reference, field); }
+            set { _Interpreter.SetObject(_Reference, field, value); }
+        }
 
-		public ICollection Keys {
-			get { return _Interpreter.GetTableDict (this).Keys; }
-		}
+        public ICollection Keys
+        {
+            get { return _Interpreter.GetTableDict(this).Keys; }
+        }
 
-		public ICollection Values {
-			get { return _Interpreter.GetTableDict (this).Values; }
-		}
+        public ICollection Values
+        {
+            get { return _Interpreter.GetTableDict(this).Values; }
+        }
 
-		/*
+        public IDictionaryEnumerator GetEnumerator()
+        {
+            return _Interpreter.GetTableDict(this).GetEnumerator();
+        }
+
+        /*
 		 * Gets an string fields of a table ignoring its metatable,
 		 * if it exists
 		 */
-		internal object RawGet (string field)
-		{
-			return _Interpreter.RawGetObject (_Reference, field);
-		}
 
-		/*
+        internal object RawGet(string field)
+        {
+            return _Interpreter.RawGetObject(_Reference, field);
+        }
+
+        /*
 		 * Pushes this table into the Lua stack
 		 */
-		internal void Push (LuaState luaState)
-		{
-			LuaLib.LuaGetRef (luaState, _Reference);
-		}
 
-		public override string ToString ()
-		{
-			return "table";
-		}
-	}
+        internal void Push(LuaState luaState)
+        {
+            LuaLib.LuaGetRef(luaState, _Reference);
+        }
+
+        public override string ToString()
+        {
+            return "table";
+        }
+    }
 }

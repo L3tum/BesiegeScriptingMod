@@ -1,14 +1,25 @@
+#region usings
+
 using System;
 using System.Collections;
 using UnityEngine;
 using Random = System.Random;
 
+#endregion
+
 namespace BesiegeScriptingMod.Ook
 {
-    class OokBehaviour : MonoBehaviour
+    internal class OokBehaviour : MonoBehaviour
     {
         private readonly int _popupId = spaar.ModLoader.Util.GetWindowID();
-        Rect _winRect = new Rect(Screen.width/2.0f -50.0f, Screen.height/2.0f - 50.0f, 100.0f, 100.0f);
+        private bool _awaiting;
+        private Random _rand;
+        private Rect _winRect = new Rect(Screen.width/2.0f - 50.0f, Screen.height/2.0f - 50.0f, 100.0f, 100.0f);
+
+        private int EOF; //End Of File
+
+        /** The instruction pointer */
+        private int ip;
         // Instance info.
         // Instance of Brainfuck interpreter, actually handles interpreting.
 
@@ -18,16 +29,9 @@ namespace BesiegeScriptingMod.Ook
         private int mp;
 
         /** The Strings containing the commands to be executed */
-        private String[] ookCom;
+        private string[] ookCom;
 
-        /** The instruction pointer */
-        private int ip = 0;
-
-        private int EOF; //End Of File
-
-        public String sauce = "";
-        private Random _rand;
-        private bool _awaiting;
+        public string sauce = "";
 
         /**
             * Create the Brainfuck VM and give it the string to be interpreted.
@@ -36,11 +40,11 @@ namespace BesiegeScriptingMod.Ook
 
         public void init(string code)
         {
-                mem = new char[30000];
-                mp = 0;
-                ookCom = Util.Util.splitStringAtNewlineAndSpace(code);
-                EOF = ookCom.Length;
-                StartCoroutine_Auto(runOok());
+            mem = new char[30000];
+            mp = 0;
+            ookCom = Util.Util.splitStringAtNewlineAndSpace(code);
+            EOF = ookCom.Length;
+            StartCoroutine_Auto(runOok());
             _rand = new Random(DateTime.Now.Millisecond + DateTime.Now.Second + DateTime.Now.Minute + DateTime.Now.Year + DateTime.Now.Day + DateTime.Now.Hour + DateTime.Now.Month);
         }
 
@@ -48,7 +52,7 @@ namespace BesiegeScriptingMod.Ook
         {
             if (_awaiting)
             {
-               _winRect = GUI.Window(_popupId, _winRect, Func, "Popup");
+                _winRect = GUI.Window(_popupId, _winRect, Func, "Popup");
             }
         }
 
@@ -76,8 +80,8 @@ namespace BesiegeScriptingMod.Ook
 
         public void Done()
         {
-            GetComponent<ScriptHandler>()._cSauce = sauce;
-            GetComponent<ScriptHandler>()._displayC = true;
+            GetComponent<ScriptHandler>().CSauce = sauce;
+            GetComponent<ScriptHandler>().DisplayC = true;
             Destroy(this);
         }
 
@@ -86,7 +90,7 @@ namespace BesiegeScriptingMod.Ook
             while (ip + 1 < EOF)
             {
                 // Get the current command
-                String c = ookCom[ip] + ookCom[ip + 1];
+                string c = ookCom[ip] + ookCom[ip + 1];
 
                 // Act based on the current command and the brainfuck spec
                 switch (c)
@@ -104,7 +108,7 @@ namespace BesiegeScriptingMod.Ook
                         mem[mp]--;
                         break;
                     case "Ook!Ook.":
-                        sauce += (mem[mp]);
+                        sauce += mem[mp];
                         break;
                     case "Ook.Ook!":
                         int key = _rand.Next();
@@ -113,8 +117,8 @@ namespace BesiegeScriptingMod.Ook
                     case "Ook!Ook?":
                         if (mem[mp] == 0)
                         {
-                            while (ookCom[ip] + ookCom[ip+1] != "Ook?Ook!")
-                            { 
+                            while (ookCom[ip] + ookCom[ip + 1] != "Ook?Ook!")
+                            {
                                 ip++;
                             }
                         }
@@ -123,7 +127,7 @@ namespace BesiegeScriptingMod.Ook
                     case "Ook?Ook!":
                         if (mem[mp] != 0)
                         {
-                            while (ookCom[ip] + ookCom[ip+1] != "Ook!Ook?")
+                            while (ookCom[ip] + ookCom[ip + 1] != "Ook!Ook?")
                             {
                                 ip--;
                             }

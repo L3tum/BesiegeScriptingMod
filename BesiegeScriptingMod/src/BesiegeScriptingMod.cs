@@ -1,17 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
+﻿#region usings
+
 using spaar.ModLoader;
 using UnityEngine;
+
+#endregion
 
 namespace BesiegeScriptingMod
 {
     public class BesiegeScriptingMod
     {
-        GameObject myGO;
+        private GameObject myGO;
+
         public void OnLoad(Key activator, Key selector, Key settings, Key bi)
         {
             myGO = new GameObject("MortimersScriptingMod");
-            ScriptHandler sh = (ScriptHandler)myGO.AddComponent<ScriptHandler>();
+            ScriptHandler sh = myGO.AddComponent<ScriptHandler>();
             sh.SetKeys(activator, selector, settings, bi);
             myGO.AddComponent<DontDestroyOnLoady>();
         }
@@ -19,18 +22,19 @@ namespace BesiegeScriptingMod
         public void OnUnload()
         {
             myGO.GetComponent<ScriptHandler>().OnUnload();
-            UnityEngine.Object.Destroy(myGO);
+            Object.Destroy(myGO);
         }
 
-        public void ScaleX(String arg)
+        public void ScaleX(string arg)
         {
             float scale = float.Parse(arg);
             Settings.WinSize.width = Settings.WinSize.width*scale;
         }
-        public void ScaleY(String arg)
+
+        public void ScaleY(string arg)
         {
             float scale = float.Parse(arg);
-            Settings.WinSize.height = Settings.WinSize.height * scale;
+            Settings.WinSize.height = Settings.WinSize.height*scale;
         }
     }
 }

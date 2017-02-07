@@ -23,35 +23,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
+#region usings
+
 using System;
+using KeraLua;
+
+#endregion
 
 namespace NLua.Event
 {
-	#if USE_KOPILUA
+#if USE_KOPILUA
 	using LuaCore  = KopiLua.Lua;
 	using LuaState = KopiLua.LuaState;
 	using LuaDebug = KopiLua.LuaDebug;
 	#else
-	using LuaCore  = KeraLua.Lua;
-	using LuaState = KeraLua.LuaState;
-	using LuaDebug = KeraLua.LuaDebug;
-	#endif
 
-	/// <summary>
-	/// Event args for hook callback event
-	/// </summary>
-	/// <author>Reinhard Ostermeier</author>
-	public class DebugHookEventArgs : EventArgs
-	{
-		private readonly LuaDebug luaDebug;
+    #region usings
 
-		public DebugHookEventArgs (LuaDebug luaDebug)
-		{
-			this.luaDebug = luaDebug;
-		}
+    using LuaCore = KeraLua.Lua;
 
-		public LuaDebug LuaDebug {
-			get { return luaDebug; }
-		}
-	}
+    #endregion
+
+#endif
+
+    /// <summary>
+    /// Event args for hook callback event
+    /// </summary>
+    /// <author>Reinhard Ostermeier</author>
+    public class DebugHookEventArgs : EventArgs
+    {
+        public DebugHookEventArgs(LuaDebug luaDebug)
+        {
+            LuaDebug = luaDebug;
+        }
+
+        public LuaDebug LuaDebug { get; }
+    }
 }

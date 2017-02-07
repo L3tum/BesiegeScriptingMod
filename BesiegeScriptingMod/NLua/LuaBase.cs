@@ -23,61 +23,67 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
+#region usings
+
 using System;
-using System.Text;
-using System.Collections.Generic;
+
+#endregion
 
 namespace NLua
 {
-	/// <summary>
-	/// Base class to provide consistent disposal flow across lua objects. Uses code provided by Yves Duhoux and suggestions by Hans Schmeidenbacher and Qingrui Li 
-	/// </summary>
-	public abstract class LuaBase : IDisposable
-	{
-		private bool _Disposed;
-		[CLSCompliantAttribute(false)]
-		protected int
-			_Reference;
-		[CLSCompliantAttribute(false)]
-		protected Lua
-			_Interpreter;
+    /// <summary>
+    /// Base class to provide consistent disposal flow across lua objects. Uses code provided by Yves Duhoux and suggestions by Hans Schmeidenbacher and Qingrui Li 
+    /// </summary>
+    public abstract class LuaBase : IDisposable
+    {
+        private bool _Disposed;
 
-		~LuaBase ()
-		{
-			Dispose (false);
-		}
+        [CLSCompliant(false)] protected Lua
+            _Interpreter;
 
-		public void Dispose ()
-		{
-			Dispose (true);
-			GC.SuppressFinalize (this);
-		}
+        [CLSCompliant(false)] protected int
+            _Reference;
 
-		public virtual void Dispose (bool disposeManagedResources)
-		{
-			if (!_Disposed) {
-				if (disposeManagedResources) {
-					if (_Reference != 0)
-						_Interpreter.DisposeInternal (_Reference);
-				}
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
 
-				_Interpreter = null;
-				_Disposed = true;
-			}
-		}
+        ~LuaBase()
+        {
+            Dispose(false);
+        }
 
-		public override bool Equals (object o)
-		{
-			if (o is LuaBase) {
-				var l = (LuaBase)o;
-				return _Interpreter.CompareRef (l._Reference, _Reference);
-			} else
-				return false;
-		}
+        public virtual void Dispose(bool disposeManagedResources)
+        {
+            if (!_Disposed)
+            {
+                if (disposeManagedResources)
+                {
+                    if (_Reference != 0)
+                        _Interpreter.DisposeInternal(_Reference);
+                }
 
-		public override int GetHashCode ()
-		{
-			return _Reference;
-		}
-	}
+                _Interpreter = null;
+                _Disposed = true;
+            }
+        }
+
+        public override bool Equals(object o)
+        {
+            if (o is LuaBase)
+            {
+                var l = (LuaBase) o;
+                return _Interpreter.CompareRef(l._Reference, _Reference);
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return _Reference;
+        }
+    }
 }

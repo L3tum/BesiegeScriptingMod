@@ -23,240 +23,242 @@
  * THE SOFTWARE.
  */
 
+#region usings
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using NLua.Extensions;
+
+#endregion
 
 namespace NLua.Extensions
 {
-	/// <summary>
-	/// Some random extension stuff.
-	/// </summary>
-	static class CheckNull
-	{
-		/// <summary>
-		/// Determines whether the specified obj is null.
-		/// </summary>
-		/// <param name="obj">The obj.</param>
-		/// <returns>
-		/// 	<c>true</c> if the specified obj is null; otherwise, <c>false</c>.
-		/// </returns>
-		/// 
-		
+    /// <summary>
+    /// Some random extension stuff.
+    /// </summary>
+    internal static class CheckNull
+    {
+        /// <summary>
+        /// Determines whether the specified obj is null.
+        /// </summary>
+        /// <param name="obj">The obj.</param>
+        /// <returns>
+        /// 	<c>true</c> if the specified obj is null; otherwise, <c>false</c>.
+        /// </returns>
+        /// 
 #if USE_KOPILUA
 		public static bool IsNull (object obj)
 		{
 			return (obj == null);
 		}
 #else
-
-		public static bool IsNull (IntPtr ptr)
-		{
-			return (ptr.Equals (IntPtr.Zero));
-		}
+        public static bool IsNull(IntPtr ptr)
+        {
+            return ptr.Equals(IntPtr.Zero);
+        }
 #endif
-	}
+    }
 
-	static class TypeExtensions
-	{
-		public static bool HasMethod (this Type t, string name)
-		{
-			var op = t.GetMethods ((BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static));
-			return op.Any (m => m.Name == name);
-		}
+    internal static class TypeExtensions
+    {
+        public static bool HasMethod(this Type t, string name)
+        {
+            var op = t.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+            return op.Any(m => m.Name == name);
+        }
 
-		public static bool HasAdditionOpertator (this Type t)
-		{
-			if (t.IsPrimitive ()) 
-				return true;
+        public static bool HasAdditionOpertator(this Type t)
+        {
+            if (t.IsPrimitive())
+                return true;
 
-			return t.HasMethod ("op_Addition");
-		}
+            return t.HasMethod("op_Addition");
+        }
 
-		public static bool HasSubtractionOpertator (this Type t)
-		{
-			if (t.IsPrimitive ())
-				return true;
+        public static bool HasSubtractionOpertator(this Type t)
+        {
+            if (t.IsPrimitive())
+                return true;
 
-			return t.HasMethod ("op_Subtraction");
-		}
+            return t.HasMethod("op_Subtraction");
+        }
 
-		public static bool HasMultiplyOpertator (this Type t)
-		{
-			if (t.IsPrimitive ())
-				return true;
+        public static bool HasMultiplyOpertator(this Type t)
+        {
+            if (t.IsPrimitive())
+                return true;
 
-			return t.HasMethod ("op_Multiply");
-		}
+            return t.HasMethod("op_Multiply");
+        }
 
-		public static bool HasDivisionOpertator (this Type t)
-		{
-			if (t.IsPrimitive ())
-				return true;
+        public static bool HasDivisionOpertator(this Type t)
+        {
+            if (t.IsPrimitive())
+                return true;
 
-			return t.HasMethod ("op_Division");
-		}
+            return t.HasMethod("op_Division");
+        }
 
-		public static bool HasModulusOpertator (this Type t)
-		{
-			if (t.IsPrimitive ())
-				return true;
+        public static bool HasModulusOpertator(this Type t)
+        {
+            if (t.IsPrimitive())
+                return true;
 
-			return t.HasMethod ("op_Modulus");
-		}
+            return t.HasMethod("op_Modulus");
+        }
 
-		public static bool HasUnaryNegationOpertator (this Type t)
-		{
-			if (t.IsPrimitive ())
-				return true;
-			// Unary - will always have only one version.
-			var op = t.GetMethod ("op_UnaryNegation", BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
-			return op != null;
-		}
+        public static bool HasUnaryNegationOpertator(this Type t)
+        {
+            if (t.IsPrimitive())
+                return true;
+            // Unary - will always have only one version.
+            var op = t.GetMethod("op_UnaryNegation", BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+            return op != null;
+        }
 
-		public static bool HasEqualityOpertator (this Type t)
-		{
-			if (t.IsPrimitive ())
-				return true;
-			return t.HasMethod ("op_Equality");
-		}
+        public static bool HasEqualityOpertator(this Type t)
+        {
+            if (t.IsPrimitive())
+                return true;
+            return t.HasMethod("op_Equality");
+        }
 
-		public static bool HasLessThanOpertator (this Type t)
-		{
-			if (t.IsPrimitive ())
-				return true;
+        public static bool HasLessThanOpertator(this Type t)
+        {
+            if (t.IsPrimitive())
+                return true;
 
-			return t.HasMethod ("op_LessThan");
-		}
+            return t.HasMethod("op_LessThan");
+        }
 
-		public static bool HasLessThanOrEqualOpertator (this Type t)
-		{
-			if (t.IsPrimitive ())
-				return true;
-			return t.HasMethod ("op_LessThanOrEqual");
-		}
+        public static bool HasLessThanOrEqualOpertator(this Type t)
+        {
+            if (t.IsPrimitive())
+                return true;
+            return t.HasMethod("op_LessThanOrEqual");
+        }
 
-		public static MethodInfo [] GetMethods (this Type t, string name, BindingFlags flags)
-		{
-			return t.GetMethods (flags).Where (m => m.Name == name).ToArray ();
-		}
+        public static MethodInfo[] GetMethods(this Type t, string name, BindingFlags flags)
+        {
+            return t.GetMethods(flags).Where(m => m.Name == name).ToArray();
+        }
 
-		public static MethodInfo [] GetExtensionMethods (this Type type, IEnumerable<Assembly> assemblies = null)
-		{
-			List<Type> types = new List<Type> ();
+        public static MethodInfo[] GetExtensionMethods(this Type type, IEnumerable<Assembly> assemblies = null)
+        {
+            List<Type> types = new List<Type>();
 
-			types.AddRange (type.GetAssembly().GetTypes ().Where (t => t.IsPublic ()));
+            types.AddRange(type.GetAssembly().GetTypes().Where(t => t.IsPublic()));
 
-			if (assemblies != null) {
-				foreach (Assembly item in assemblies) {
-					if (item == type.GetAssembly ())
-						continue;
-					types.AddRange (item.GetTypes ().Where (t => t.IsPublic ()));
-				}
-			}
+            if (assemblies != null)
+            {
+                foreach (Assembly item in assemblies)
+                {
+                    if (item == type.GetAssembly())
+                        continue;
+                    types.AddRange(item.GetTypes().Where(t => t.IsPublic()));
+                }
+            }
 
-			var query = from extensionType in types
-						where extensionType.IsSealed() && !extensionType.IsGenericType() && !extensionType.IsNested
-						from method in extensionType.GetMethods (BindingFlags.Static | BindingFlags.Public)
-						where method.IsDefined (typeof (ExtensionAttribute), false)
-						where method.GetParameters () [0].ParameterType == type
-						select method;
-			return query.ToArray<MethodInfo> ();
-		}
+            var query = from extensionType in types
+                where extensionType.IsSealed() && !extensionType.IsGenericType() && !extensionType.IsNested
+                from method in extensionType.GetMethods(BindingFlags.Static | BindingFlags.Public)
+                where method.IsDefined(typeof (ExtensionAttribute), false)
+                where method.GetParameters()[0].ParameterType == type
+                select method;
+            return query.ToArray();
+        }
 
-		/// <summary>
-		/// Extends the System.Type-type to search for a given extended MethodeName.
-		/// </summary>
-		/// <param name="MethodeName">Name of the Methode</param>
-		/// <returns>the found Method or null</returns>
-		public static MethodInfo GetExtensionMethod (this Type t, string name, IEnumerable<Assembly> assemblies = null)
-		{
-			var mi = from methode in t.GetExtensionMethods (assemblies)
-					 where methode.Name == name
-					 select methode;
-			if (!mi.Any<MethodInfo> ())
-				return null;
-			else
-				return mi.First<MethodInfo> ();
-		}
+        /// <summary>
+        /// Extends the System.Type-type to search for a given extended MethodeName.
+        /// </summary>
+        /// <param name="MethodeName">Name of the Methode</param>
+        /// <returns>the found Method or null</returns>
+        public static MethodInfo GetExtensionMethod(this Type t, string name, IEnumerable<Assembly> assemblies = null)
+        {
+            var mi = from methode in t.GetExtensionMethods(assemblies)
+                where methode.Name == name
+                select methode;
+            if (!mi.Any())
+                return null;
+            return mi.First();
+        }
 
-		public static bool IsPrimitive (this Type t)
-		{
+        public static bool IsPrimitive(this Type t)
+        {
 #if NETFX_CORE
 			return t.GetTypeInfo ().IsPrimitive;
 #else
-			return t.IsPrimitive;
+            return t.IsPrimitive;
 #endif
-		}
+        }
 
-		public static bool IsClass (this Type t)
-		{
+        public static bool IsClass(this Type t)
+        {
 #if NETFX_CORE
 			return t.GetTypeInfo ().IsClass;
 #else
-			return t.IsClass;
+            return t.IsClass;
 #endif
-		}
+        }
 
-		public static bool IsEnum (this Type t)
-		{
+        public static bool IsEnum(this Type t)
+        {
 #if NETFX_CORE
 			return t.GetTypeInfo ().IsEnum;
 #else
-			return t.IsEnum;
+            return t.IsEnum;
 #endif
-		}
+        }
 
-		public static bool IsPublic (this Type t)
-		{
+        public static bool IsPublic(this Type t)
+        {
 #if NETFX_CORE
 			return t.GetTypeInfo ().IsPublic;
 #else
-			return t.IsPublic;
+            return t.IsPublic;
 #endif
-		}
+        }
 
-		public static bool IsSealed (this Type t)
-		{
+        public static bool IsSealed(this Type t)
+        {
 #if NETFX_CORE
 			return t.GetTypeInfo ().IsSealed;
 #else
-			return t.IsSealed;
+            return t.IsSealed;
 #endif
-		}
+        }
 
-		public static bool IsGenericType (this Type t)
-		{
+        public static bool IsGenericType(this Type t)
+        {
 #if NETFX_CORE
 			return t.GetTypeInfo ().IsGenericType;
 #else
-			return t.IsGenericType;
+            return t.IsGenericType;
 #endif
-		}
+        }
 
-		public static bool IsInterface (this Type t)
-		{
+        public static bool IsInterface(this Type t)
+        {
 #if NETFX_CORE
 			return t.GetTypeInfo ().IsInterface;
 #else
-			return t.IsInterface;
+            return t.IsInterface;
 #endif
-		}		
+        }
 
-		public static Assembly GetAssembly (this Type t)
-		{
+        public static Assembly GetAssembly(this Type t)
+        {
 #if NETFX_CORE
 			return t.GetTypeInfo ().Assembly;
 #else
-			return t.Assembly;
+            return t.Assembly;
 #endif
-		}
+        }
 
 #if NETFX_CORE
-		// Missing Reflection methods from WinRT
+    // Missing Reflection methods from WinRT
 
 		public const BindingFlags Default = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
 
@@ -386,30 +388,32 @@ namespace NLua.Extensions
 		}
 
 #endif
-	}
+    }
 
-	static class StringExtensions
-	{
-		public static IEnumerable<string> SplitWithEscape (this string input, char separator, char escapeCharacter)
-		{
-			int start = 0;
-			int index = 0;
-			while (index < input.Length) {
-				index = input.IndexOf (separator, index);
-				if (index == -1)
-					break;
+    internal static class StringExtensions
+    {
+        public static IEnumerable<string> SplitWithEscape(this string input, char separator, char escapeCharacter)
+        {
+            int start = 0;
+            int index = 0;
+            while (index < input.Length)
+            {
+                index = input.IndexOf(separator, index);
+                if (index == -1)
+                    break;
 
-				if (input [index - 1] == escapeCharacter) {
-					input = input.Remove (index - 1, 1);
-					continue;
-				}
+                if (input[index - 1] == escapeCharacter)
+                {
+                    input = input.Remove(index - 1, 1);
+                    continue;
+                }
 
 
-				yield return input.Substring (start, index - start);
-				index++;
-				start = index;
-			}
-			yield return input.Substring (start);
-		}
-	}
+                yield return input.Substring(start, index - start);
+                index++;
+                start = index;
+            }
+            yield return input.Substring(start);
+        }
+    }
 }

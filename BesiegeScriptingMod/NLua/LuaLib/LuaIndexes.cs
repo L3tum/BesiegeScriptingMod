@@ -24,30 +24,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-using System;
 
 namespace NLua
 {
-	#if USE_KOPILUA
+#if USE_KOPILUA
 	using LuaCore  = KopiLua.Lua;
 	using LuaState = KopiLua.LuaState;
 	#else
-	using LuaCore  = KeraLua.Lua;
-	using LuaState = KeraLua.LuaState;
-	#endif
 
-	public class LuaIndexes
-	{
-		static int registryIndex = 0;
+    #region usings
 
-		public static int Registry {
-			get
-			{
-				if (registryIndex != 0)
-					return registryIndex;
-				registryIndex = LuaCore.LuaNetRegistryIndex ();
-				return registryIndex; 
-			}
-		}
-	}
+    using LuaCore = KeraLua.Lua;
+
+    #endregion
+
+#endif
+
+    public class LuaIndexes
+    {
+        private static int registryIndex;
+
+        public static int Registry
+        {
+            get
+            {
+                if (registryIndex != 0)
+                    return registryIndex;
+                registryIndex = LuaCore.LuaNetRegistryIndex();
+                return registryIndex;
+            }
+        }
+    }
 }

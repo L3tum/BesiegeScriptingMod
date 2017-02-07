@@ -23,22 +23,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-using System;
 
 namespace NLua.Event
 {
-	/// <summary>
-	/// Event codes for lua hook function
-	/// </summary>
-	/// <remarks>
-	/// Do not change any of the values because they must match the lua values
-	/// </remarks>
-	public enum EventCodes
-	{
-		LUA_HOOKCALL    = 0,
-		LUA_HOOKRET     = 1,
-		LUA_HOOKLINE    = 2,
-		LUA_HOOKCOUNT   = 3,
-		LUA_HOOKTAILRET = 4
-	}
+    /// <summary>
+    /// Event codes for lua hook function
+    /// </summary>
+    /// <remarks>
+    /// Do not change any of the values because they must match the lua values
+    /// </remarks>
+    public enum EventCodes
+    {
+        LUA_HOOKCALL = 0,
+        LUA_HOOKRET = 1,
+        LUA_HOOKLINE = 2,
+        LUA_HOOKCOUNT = 3,
+        LUA_HOOKTAILRET = 4
+    }
 }

@@ -1,4 +1,8 @@
-﻿using System;
+﻿#region usings
+
+using System;
+
+#endregion
 
 namespace BesiegeScriptingMod.Chef
 {
@@ -21,12 +25,13 @@ namespace BesiegeScriptingMod.Chef
         {
         }
 
-        public ChefException(int ingredient, String[] tokens, String error)
-            : base(ingredient.ToString() + " " + error)
+        public ChefException(int ingredient, string[] tokens, string error)
+            : base(ingredient + " " + error)
         {
         }
-        public ChefException(int ingredient, String error)
-            : base(ingredient.ToString() + " " + error)
+
+        public ChefException(int ingredient, string error)
+            : base(ingredient + " " + error)
         {
         }
     }

@@ -1,34 +1,36 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
+#endregion
+
 namespace BesiegeScriptingMod.TrumpScript
 {
-    class TrumpScript
+    internal class TrumpScript
     {
-        private List<String> pattern = new List<string>();
-        private List<String> replacements = new List<string>();
-        private Allowed allowed = new Allowed();
-        private String sauce;
+        private readonly Allowed allowed = new Allowed();
+        private readonly List<string> pattern = new List<string>();
+        private readonly List<string> replacements = new List<string>();
+        private string sauce;
 
-        public String Convert(String sauce)
+        public string Convert(string sauce)
         {
             this.sauce = sauce;
 
             //make sure ends with "America is great"
             if (!sauce.EndsWith("America is great"))
             {
-                UnityEngine.Debug.LogError(allowed.Errors["freedom"]);
+                Debug.LogError(allowed.Errors["freedom"]);
                 return null;
             }
-            foreach (string s in sauce.Split(new []{" ", "\r\n", "\r", "\n", "\""}, StringSplitOptions.RemoveEmptyEntries))
+            foreach (string s in sauce.Split(new[] {" ", "\r\n", "\r", "\n", "\""}, StringSplitOptions.RemoveEmptyEntries))
             {
                 if (!allowed.ALLOWED.Contains(s.ToLower()) && !allowed.trump.Contains(s.ToLower()) && !allowed.vocabulary.Contains(s.ToLower()))
                 {
-                    UnityEngine.Debug.LogError(allowed.Errors["badword"] + Util.Util.getNewLine() + "Bad word: " + s);
+                    Debug.LogError(allowed.Errors["badword"] + Util.Util.getNewLine() + "Bad word: " + s);
                     return null;
                 }
             }
@@ -41,7 +43,7 @@ namespace BesiegeScriptingMod.TrumpScript
                 }
                 else if (int.Parse(match.Value) < 1000000)
                 {
-                    UnityEngine.Debug.LogError(allowed.Errors["too_small"]);
+                    Debug.LogError(allowed.Errors["too_small"]);
                     return null;
                 }
             }
@@ -103,4 +105,3 @@ namespace BesiegeScriptingMod.TrumpScript
         }
     }
 }
-                                

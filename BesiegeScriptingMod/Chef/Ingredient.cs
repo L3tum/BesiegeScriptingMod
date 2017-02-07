@@ -1,5 +1,8 @@
-﻿using System;
+﻿#region usings
+
 using System.Text.RegularExpressions;
+
+#endregion
 
 namespace BesiegeScriptingMod.Chef
 {
@@ -11,35 +14,36 @@ namespace BesiegeScriptingMod.Chef
             Liquid
         }
 
-        private String name;
         private int amount;
+
+        private readonly string name;
         private State state;
 
-        public Ingredient(String ingredient)
+        public Ingredient(string ingredient)
         {
-            String[] tokens = ingredient.Split();
+            string[] tokens = ingredient.Split();
 
             int i = 0;
             state
                 =
-                Ingredient.State.Dry;
+                State.Dry;
             if (Regex.Match(tokens[i], "^\\d*$").Success)
             {
                 amount = int.Parse(tokens[i]);
                 i++;
                 if (Regex.Match(tokens[i], "heaped|level").Success)
                 {
-                    state = Ingredient.State.Dry;
+                    state = State.Dry;
                     i++;
                 }
                 if (Regex.Match(tokens[i], "^g|kg|pinch(es)?").Success)
                 {
-                    state = Ingredient.State.Dry;
+                    state = State.Dry;
                     i++;
                 }
                 else if (Regex.Match(tokens[i], "^ml|l|dash(es)?").Success)
                 {
-                    state = Ingredient.State.Liquid;
+                    state = State.Liquid;
                     i++;
                 }
                 else if (Regex.Match(tokens[i], "^cup(s)?|teaspoon(s)?|tablespoon(s)?").Success)
@@ -60,10 +64,10 @@ namespace BesiegeScriptingMod.Chef
             }
         }
 
-        public Ingredient(int n, State s, String name)
+        public Ingredient(int n, State s, string name)
         {
-            this.amount = n;
-            this.state = s;
+            amount = n;
+            state = s;
             this.name = name;
         }
 
@@ -92,7 +96,7 @@ namespace BesiegeScriptingMod.Chef
             state = State.Dry;
         }
 
-        public String getName()
+        public string getName()
         {
             return name;
         }

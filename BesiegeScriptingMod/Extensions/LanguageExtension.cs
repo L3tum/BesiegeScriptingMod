@@ -1,7 +1,10 @@
-﻿using System;
+﻿#region usings
+
 using System.Collections.Generic;
 using BesiegeScriptingMod.Util;
 using UnityEngine;
+
+#endregion
 
 namespace BesiegeScriptingMod.Extensions
 {
@@ -10,8 +13,8 @@ namespace BesiegeScriptingMod.Extensions
         /// <summary>
         /// Name of your language
         /// </summary>
-        public abstract String name { get; }
-        
+        public abstract string name { get; }
+
         /// <summary>
         /// Whether the script needs to be converted before being executed
         /// </summary>
@@ -20,7 +23,7 @@ namespace BesiegeScriptingMod.Extensions
         /// <summary>
         /// The file-ending of your language (e.g. 'cs' for CSharp)
         /// </summary>
-        public abstract String extension { get; }
+        public abstract string extension { get; }
 
         /// <summary>
         /// Method that is called when a script of your language should be executed
@@ -31,7 +34,7 @@ namespace BesiegeScriptingMod.Extensions
         /// <param name="sname">Name of the Script</param>
         /// <param name="addedScripts">List of Scripts. Every instance of your script you add to a GameObject needs to be added to this Dictionary</param>
         /// <returns>Boolean whether the execution worked(true) or failed(false)</returns>
-        public abstract bool Execute(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts);
+        public abstract bool Execute(string refs, string sauce, List<GameObject> gos, string sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts);
 
         /// <summary>
         /// Method that is called when a script of your language should be converted
@@ -40,7 +43,7 @@ namespace BesiegeScriptingMod.Extensions
         /// <param name="sname">Name of the Script</param>
         /// <param name="refs">References declared for the Script</param>
         /// <returns>Source code that can be executed via the $Execute method</returns>
-        public virtual String Convert(String Sauce, String sname, String refs)
+        public virtual string Convert(string Sauce, string sname, string refs)
         {
             return "";
         }

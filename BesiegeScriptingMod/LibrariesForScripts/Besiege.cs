@@ -1,36 +1,39 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using spaar.ModLoader;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
+#endregion
+
 namespace BesiegeScriptingMod.LibrariesForScripts
 {
     public class Besiege
     {
+        internal static Besiege _besiege;
         public AddPiece addPiece;
-        public List<GameObject> prefabs;
-        public List<GameObject> ghosts; 
-        public LEVELLORD levellord;
-        public GameObject mainCamera;
-        public PrefabMaster prefabMaster;
-        public StatMaster statMaster;
+        public AssetImporter assetImporter;
+        public BlockSkinLoader blockSkinLoader;
+        public GameObject buildingMachine;
+        public List<GameObject> ghosts;
         public InputManager inputManager;
+        public LEVELLORD levellord;
+        public ListOfNames listOfNames;
+        public Machine machine;
+        public MachineObjectTracker machineObjectTracker;
+        public GameObject mainCamera;
         public OptionsMaster optionsMaster;
+        public PrefabMaster prefabMaster;
+        public List<GameObject> prefabs;
         public ReferenceMaster referenceMaster;
         public SaveOptions saveOptions;
-        public BlockSkinLoader blockSkinLoader;
-        public AssetImporter assetImporter;
+        public GameObject simulationMachine;
+        public StatMaster statMaster;
         public SteamManager steamManager;
         public WorkshopManager workkshopManager;
-        public ListOfNames listOfNames;
-        public MachineObjectTracker machineObjectTracker;
-        public Machine machine;
-        public GameObject buildingMachine;
-        public GameObject simulationMachine;
-
-        internal static Besiege _besiege;
 
         internal static void SetUp()
         {
@@ -56,7 +59,7 @@ namespace BesiegeScriptingMod.LibrariesForScripts
                 assetImporter = p.GetComponent<AssetImporter>(),
                 steamManager = p.GetComponent<SteamManager>(),
                 workkshopManager = p.GetComponent<WorkshopManager>(),
-                listOfNames = p.GetComponent<ListOfNames>(),
+                listOfNames = p.GetComponent<ListOfNames>()
             };
             foreach (Transform transform in p.transform.FindChild("BLOCKS").FindChild("Prefabs"))
             {
@@ -77,7 +80,7 @@ namespace BesiegeScriptingMod.LibrariesForScripts
                     besiege.simulationMachine = besiege.machine.gameObject.transform.FindChild("Simulation Machine").gameObject;
                 }
             }
-            Besiege._besiege = besiege;
+            _besiege = besiege;
         }
 
         private static void GameOnOnSimulationToggle(bool simulating)
@@ -133,10 +136,10 @@ namespace BesiegeScriptingMod.LibrariesForScripts
             {
                 besiege.simulationMachine = besiege.machine.gameObject.transform.FindChild("Simulation Machine").gameObject;
             }
-            Besiege._besiege = besiege;
+            _besiege = besiege;
         }
 
-        public BlockBehaviour GetBlockByGuid(String GUID)
+        public BlockBehaviour GetBlockByGuid(string GUID)
         {
             return _besiege.machine.Blocks.FirstOrDefault(blockBehaviour => blockBehaviour.Guid.Equals(new Guid(GUID)));
         }
@@ -146,7 +149,7 @@ namespace BesiegeScriptingMod.LibrariesForScripts
             return _besiege.machine.Blocks.FirstOrDefault(t => t.GetBlockID() == id);
         }
 
-        public BlockBehaviour GetBlockByName(String name)
+        public BlockBehaviour GetBlockByName(string name)
         {
             return _besiege.machine.Blocks.FirstOrDefault(t => t.name == name);
         }

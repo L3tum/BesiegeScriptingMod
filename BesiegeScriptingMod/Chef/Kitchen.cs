@@ -1,17 +1,22 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Object = UnityEngine.Object;
+
+#endregion
 
 namespace BesiegeScriptingMod.Chef
 {
     public class Kitchen
     {
-        Container[] mixingbowls;
-        Container[] bakingdishes;
-        Dictionary<String, Recipe> recipes;
-        Recipe recipe;
+        private readonly Container[] bakingdishes;
+        private readonly Container[] mixingbowls;
+        private readonly Recipe recipe;
+        private readonly Dictionary<string, Recipe> recipes;
 
-        public Kitchen(Dictionary<String, Recipe> recipes, Recipe mainrecipe)
+        public Kitchen(Dictionary<string, Recipe> recipes, Recipe mainrecipe)
         {
             Container[] mbowls = null;
             Container[] bdishes = null;
@@ -34,7 +39,7 @@ namespace BesiegeScriptingMod.Chef
                 bakingdishes[i] = new Container();
         }
 
-        public Kitchen(Dictionary<String, Recipe> recipes, Recipe mainrecipe,
+        public Kitchen(Dictionary<string, Recipe> recipes, Recipe mainrecipe,
             Container[] mbowls, Container[] bdishes)
         {
             this.recipes = recipes;
@@ -73,13 +78,12 @@ namespace BesiegeScriptingMod.Chef
         public Container cook()
         {
             ChefGUI gui = GameObject.Find("Scripting Mod").AddComponent<ChefGUI>();
-            Dictionary<String, Ingredient> ingredients = recipe.getIngredients();
+            Dictionary<string, Ingredient> ingredients = recipe.getIngredients();
             List<Method> methods = recipe.getMethods();
             LinkedList<LoopData> loops = new LinkedList<LoopData>();
             Component c;
             int i = 0;
             bool deepfrozen = false;
-            methodloop:
             while (i < methods.Count && !deepfrozen)
             {
                 Method m = methods[i];
@@ -105,10 +109,9 @@ namespace BesiegeScriptingMod.Chef
                         gui.label = "Set amount of ingredient " + ingredients[m.ingredient].getName() + " to take.";
                         while (gui.label.Equals(""))
                         {
-                            
                         }
                         ingredients[m.ingredient].setAmount(int.Parse(gui.input));
-                        MonoBehaviour.Destroy(gui);
+                        Object.Destroy(gui);
                         break;
                     case Method.Type.Put:
                         mixingbowls[m.mixingbowl].push(new Component(ingredients[m.ingredient]));
@@ -177,8 +180,7 @@ namespace BesiegeScriptingMod.Chef
                             i = end + 1;
                             continue;
                         }
-                        else
-                            loops.AddFirst(new LoopData(i, end, m.verb));
+                        loops.AddFirst(new LoopData(i, end, m.verb));
                         break;
                     case Method.Type.VerbUntil:
                         if (!sameVerb(loops.First.Value.verb, m.verb))
@@ -191,11 +193,8 @@ namespace BesiegeScriptingMod.Chef
                     case Method.Type.SetAside:
                         if (loops.Count == 0)
                             throw new ChefException(ChefException.METHOD, "Cannot set aside when not inside loop.");
-                        else
-                        {
-                            i = loops.First.Value.to + 1;
-                            continue;
-                        }
+                        i = loops.First.Value.to + 1;
+                        continue;
                     case Method.Type.Serve:
                         if (recipes[m.auxrecipe.ToLower()] == null)
                             throw new ChefException(ChefException.METHOD, "Unavailable recipe: " + m.auxrecipe);
@@ -225,7 +224,7 @@ namespace BesiegeScriptingMod.Chef
             return null;
         }
 
-        private bool sameVerb(String imp, String verb)
+        private bool sameVerb(string imp, string verb)
         {
             if (verb == null || imp == null)
                 return false;
@@ -240,24 +239,25 @@ namespace BesiegeScriptingMod.Chef
                    (imp[L - 1] == 'y' && verb.Equals(imp.Substring(0, L - 1) + "ied")); //carry ~ carried
         }
 
-        private class LoopData
-        {
-            public int from, to;
-            public String verb;
-
-            public LoopData(int from, int to, String verb)
-            {
-                this.from = from;
-                this.to = to;
-                this.verb = verb;
-            }
-        }
-
         private void serve(int n)
         {
             for (int i = 0; i < n && i < bakingdishes.Length; i++)
             {
                 Debug.Log(bakingdishes[i].serve());
+            }
+        }
+
+        private class LoopData
+        {
+            public readonly int from;
+            public readonly int to;
+            public readonly string verb;
+
+            public LoopData(int from, int to, string verb)
+            {
+                this.from = from;
+                this.to = to;
+                this.verb = verb;
             }
         }
     }

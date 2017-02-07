@@ -1,11 +1,15 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Collections.Generic;
+
+#endregion
 
 namespace BesiegeScriptingMod.Chef
 {
     public class Container
     {
-        List<Component> contents;
+        private List<Component> contents;
 
         public Container()
         {
@@ -59,9 +63,9 @@ namespace BesiegeScriptingMod.Chef
             contents = new List<Component>();
         }
 
-        public String serve()
+        public string serve()
         {
-            String result = "";
+            string result = "";
             for (int i = contents.Count - 1; i >= 0; i--)
             {
                 if (contents[i].getState() == Ingredient.State.Dry)
@@ -70,7 +74,7 @@ namespace BesiegeScriptingMod.Chef
                 }
                 else
                 {
-                    result += (((int) (contents[i].getValue()%1112064)).ToString()).ToCharArray()[0];
+                    result += (contents[i].getValue()%1112064).ToString().ToCharArray()[0];
                 }
             }
             return result;

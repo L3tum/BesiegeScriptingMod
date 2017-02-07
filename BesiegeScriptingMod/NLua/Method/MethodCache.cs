@@ -22,39 +22,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-using System;
+
+#region usings
+
 using System.Reflection;
-using NLua.Extensions;
+
+#endregion
 
 namespace NLua.Method
 {
-	/*
+    /*
 	 * Cached method
 	 */
-	struct MethodCache
-	{
-		private MethodBase _cachedMethod;
 
-		public MethodBase cachedMethod {
-			get {
-				return _cachedMethod;
-			}
-			set {
-				_cachedMethod = value;
-				var mi = value as MethodInfo;
+    internal struct MethodCache
+    {
+        private MethodBase _cachedMethod;
 
-				if (mi != null) {
-					IsReturnVoid = mi.ReturnType == typeof (void);
-				}
-			}
-		}
-		
-		public bool IsReturnVoid;
-		// List or arguments
-		public object[] args;
-		// Positions of out parameters
-		public int[] outList;
-		// Types of parameters
-		public MethodArgs[] argTypes;
-	}
+        public MethodBase cachedMethod
+        {
+            get { return _cachedMethod; }
+            set
+            {
+                _cachedMethod = value;
+                var mi = value as MethodInfo;
+
+                if (mi != null)
+                {
+                    IsReturnVoid = mi.ReturnType == typeof (void);
+                }
+            }
+        }
+
+        public bool IsReturnVoid;
+        // List or arguments
+        public object[] args;
+        // Positions of out parameters
+        public int[] outList;
+        // Types of parameters
+        public MethodArgs[] argTypes;
+    }
 }

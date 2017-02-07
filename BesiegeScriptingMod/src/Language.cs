@@ -1,4 +1,6 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -9,29 +11,27 @@ using BesiegeScriptingMod.Python;
 using BesiegeScriptingMod.Util;
 using JetBrains.Annotations;
 using UnityEngine;
+using Object = UnityEngine.Object;
+
+#endregion
 
 namespace BesiegeScriptingMod
 {
-    class Language
+    internal class Language
     {
-        public bool selected;
-
-        public String name { get; }
-
-        private readonly String _folder;
-        public readonly Dictionary<string, Script> Scripts = new Dictionary<string, Script>();
-        public bool needsConvertion { get; }
-        private readonly String _defaultFile;
-        private readonly String _extension;
-        private readonly String _extensionDot;
-        private delegate bool ExecuteDeg(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts);
-
-        private delegate String ConvertDeg(String Sauce, String sname, String refs);
+        private readonly ConvertDeg _convertDeg;
+        private readonly string _defaultFile;
 
         private readonly ExecuteDeg _executeDeg;
-        private readonly ConvertDeg _convertDeg;
+        internal readonly string _extension;
+        internal readonly string _extensionDot;
 
-        public Language(String name, bool needsConvertion, String extension, [CanBeNull] MethodInfo executeMethod = null, [CanBeNull] MethodInfo convertMethod = null, [CanBeNull] object languageextension = null)
+        internal readonly string _folder;
+        public readonly Dictionary<string, Script> Scripts = new Dictionary<string, Script>();
+        public bool selected;
+
+        public Language(string name, bool needsConvertion, string extension, [CanBeNull] MethodInfo executeMethod = null, [CanBeNull] MethodInfo convertMethod = null,
+            [CanBeNull] object languageextension = null)
         {
             this.name = name;
             _folder = Application.dataPath + "/Mods/Scripts/" + name + "Scripts";
@@ -45,7 +45,7 @@ namespace BesiegeScriptingMod
             }
             else
             {
-                _executeDeg = (ExecuteDeg)Delegate.CreateDelegate(typeof(ExecuteDeg), languageextension, executeMethod);
+                _executeDeg = (ExecuteDeg) Delegate.CreateDelegate(typeof (ExecuteDeg), languageextension, executeMethod);
             }
             if (needsConvertion)
             {
@@ -60,6 +60,9 @@ namespace BesiegeScriptingMod
             }
             InitializeScripts();
         }
+
+        public string name { get; }
+        public bool needsConvertion { get; }
 
         private void InitializeScripts()
         {
@@ -78,7 +81,7 @@ namespace BesiegeScriptingMod
                         {
                             using (TextWriter tw = File.CreateText(fileInfo.FullName.Replace(_extension, "ref")))
                             {
-                                String refs = "";
+                                string refs = "";
                                 refs += Application.dataPath + "/Mods/SpaarModLoader.dll" + Util.Util.getNewLine();
                                 refs += Application.dataPath + "/Managed/Assembly-UnityScript.dll" + Util.Util.getNewLine();
                                 refs += Application.dataPath + "/Managed/Assembly-UnityScript-firstpass.dll" + Util.Util.getNewLine();
@@ -96,9 +99,9 @@ namespace BesiegeScriptingMod
             }
         }
 
-        public String LoadDefaultFileSource()
+        public string LoadDefaultFileSource()
         {
-            String source;
+            string source;
             using (TextReader tr = new StreamReader(_defaultFile))
             {
                 source = tr.ReadToEnd();
@@ -112,7 +115,7 @@ namespace BesiegeScriptingMod
         /// </summary>
         /// <param name="sauce">Source code as passed to your method</param>
         /// <param name="sname">Name of the Script</param>
-        public void SaveSourceToFile(String sauce, String sname)
+        public void SaveSourceToFile(string sauce, string sname)
         {
             using (TextWriter tw = new StreamWriter(_folder + "/" + sname + _extensionDot))
             {
@@ -126,26 +129,26 @@ namespace BesiegeScriptingMod
         /// </summary>
         /// <param name="refs">References, as passed to your method</param>
         /// <param name="sname">Name of the Script</param>
-        public void SaveRefToFile(String refs, String sname)
+        public void SaveRefToFile(string refs, string sname)
         {
             TextWriter t = new StreamWriter(_folder + "/" + sname + ".ref", false);
             t.Write(refs);
             t.Close();
         }
 
-        public bool Execute(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool Execute(string refs, string sauce, List<GameObject> gos, string sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             return _executeDeg.Invoke(refs, sauce, gos, sname, ref addedScripts);
         }
 
-        public bool ExecuteCSharp(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecuteCSharp(string refs, string sauce, List<GameObject> gos, string sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
             AddScript(sname);
 
             var reffs = Util.Util.splitStringAtNewline(refs);
-            String finalSauce = Util.Util.getMethodsWithClass(sauce, sname, reffs);
+            string finalSauce = Util.Util.getMethodsWithClass(sauce, sname, reffs);
 
             TextWriter tt = new StreamWriter(Application.dataPath + "/Mods/Scripts/temp.cs");
             tt.Write(finalSauce);
@@ -163,7 +166,7 @@ namespace BesiegeScriptingMod
                     python.SourceCodening(assInfo, reffs);
                     if (!python.Awakening(sname))
                     {
-                        MonoBehaviour.Destroy(python);
+                        Object.Destroy(python);
                     }
                     else
                     {
@@ -174,14 +177,14 @@ namespace BesiegeScriptingMod
             return true;
         }
 
-        public bool ExecuteUnityScript(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecuteUnityScript(string refs, string sauce, List<GameObject> gos, string sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
             AddScript(sname);
 
             var reffs = Util.Util.splitStringAtNewline(refs);
-            String finalSauce = Util.Util.getMethodsWithClass(sauce, sname, reffs);
+            string finalSauce = Util.Util.getMethodsWithClass(sauce, sname, reffs);
 
             TextWriter tt = new StreamWriter(Application.dataPath + "/Mods/Scripts/temp.cs");
             tt.Write(finalSauce);
@@ -199,7 +202,7 @@ namespace BesiegeScriptingMod
                     python.SourceCodening(assInfo, reffs);
                     if (!python.Awakening(sname))
                     {
-                        MonoBehaviour.Destroy(python);
+                        Object.Destroy(python);
                     }
                     else
                     {
@@ -210,7 +213,7 @@ namespace BesiegeScriptingMod
             return true;
         }
 
-        public bool ExecuteLua(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecuteLua(string refs, string sauce, List<GameObject> gos, string sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
@@ -226,7 +229,7 @@ namespace BesiegeScriptingMod
                     luaa.SourceCodening(sauce);
                     if (!luaa.Awakening())
                     {
-                        MonoBehaviour.Destroy(luaa);
+                        Object.Destroy(luaa);
                     }
                     else
                     {
@@ -237,13 +240,13 @@ namespace BesiegeScriptingMod
             return true;
         }
 
-        public bool ExecutePython(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecutePython(string refs, string sauce, List<GameObject> gos, string sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
 
-            String[] reffs = Util.Util.splitStringAtNewline(refs);
-            String finalSauce = Util.Util.getMethodsWithClassPython(sauce, sname, reffs);
+            string[] reffs = Util.Util.splitStringAtNewline(refs);
+            string finalSauce = Util.Util.getMethodsWithClassPython(sauce, sname, reffs);
 
             AddScript(sname);
 
@@ -256,7 +259,7 @@ namespace BesiegeScriptingMod
                     python.SourceCodening(finalSauce, reffs);
                     if (!python.Awakening(sname))
                     {
-                        MonoBehaviour.Destroy(python);
+                        Object.Destroy(python);
                     }
                     else
                     {
@@ -267,7 +270,7 @@ namespace BesiegeScriptingMod
             return true;
         }
 
-        public bool ExecuteBrainfuck(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecuteBrainfuck(string refs, string sauce, List<GameObject> gos, string sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
@@ -275,7 +278,7 @@ namespace BesiegeScriptingMod
             AddScript(sname);
 
             var reffs = Util.Util.splitStringAtNewline(refs);
-            String finalSauce = Util.Util.getMethodsWithClass(sauce, sname, reffs);
+            string finalSauce = Util.Util.getMethodsWithClass(sauce, sname, reffs);
 
             TextWriter streamWriter = new StreamWriter(Application.dataPath + "/Mods/Scripts/temp.cs", false);
             streamWriter.Write(finalSauce);
@@ -292,7 +295,7 @@ namespace BesiegeScriptingMod
                     python.SourceCodening(assInfo, reffs);
                     if (!python.Awakening(sname))
                     {
-                        MonoBehaviour.Destroy(python);
+                        Object.Destroy(python);
                     }
                     else
                     {
@@ -303,7 +306,7 @@ namespace BesiegeScriptingMod
             return true;
         }
 
-        public bool ExecuteOok(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecuteOok(string refs, string sauce, List<GameObject> gos, string sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
@@ -311,7 +314,7 @@ namespace BesiegeScriptingMod
             AddScript(sname);
 
             var reffs = Util.Util.splitStringAtNewline(refs);
-            String finalSauce = Util.Util.getMethodsWithClass(sauce, sname, reffs);
+            string finalSauce = Util.Util.getMethodsWithClass(sauce, sname, reffs);
 
             TextWriter streamWriter = new StreamWriter(Application.dataPath + "/Mods/Scripts/temp.cs", false);
             streamWriter.Write(finalSauce);
@@ -328,7 +331,7 @@ namespace BesiegeScriptingMod
                     python.SourceCodening(assInfo, reffs);
                     if (!python.Awakening(sname))
                     {
-                        MonoBehaviour.Destroy(python);
+                        Object.Destroy(python);
                     }
                     else
                     {
@@ -339,7 +342,7 @@ namespace BesiegeScriptingMod
             return true;
         }
 
-        public bool ExecuteChef(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecuteChef(string refs, string sauce, List<GameObject> gos, string sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
@@ -350,14 +353,14 @@ namespace BesiegeScriptingMod
             return true;
         }
 
-        public bool ExecuteTrumpScript(String refs, String sauce, List<GameObject> gos, String sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
+        public bool ExecuteTrumpScript(string refs, string sauce, List<GameObject> gos, string sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts)
         {
             SaveSourceToFile(sauce, sname);
             SaveRefToFile(refs, sname);
             AddScript(sname);
 
             var reffs = Util.Util.splitStringAtNewline(refs);
-            String finalSauce = Util.Util.getMethodsWithClass(sauce, sname, reffs);
+            string finalSauce = Util.Util.getMethodsWithClass(sauce, sname, reffs);
 
             TextWriter tt = new StreamWriter(Application.dataPath + "/Mods/Scripts/temp.cs");
             tt.Write(finalSauce);
@@ -374,7 +377,7 @@ namespace BesiegeScriptingMod
                     python.SourceCodening(assInfo, reffs);
                     if (!python.Awakening(sname))
                     {
-                        MonoBehaviour.Destroy(python);
+                        Object.Destroy(python);
                     }
                     else
                     {
@@ -385,33 +388,33 @@ namespace BesiegeScriptingMod
             return true;
         }
 
-        public String Convert(String Sauce, String sname, String refs)
+        public string Convert(string Sauce, string sname, string refs)
         {
             return _convertDeg.Invoke(Sauce, sname, refs);
         }
 
-        public String ConvertUnityScript(String Sauce, String sname, String refs)
+        public string ConvertUnityScript(string Sauce, string sname, string refs)
         {
             return Util.Util.ConvertJSToC(Sauce, "UnityScriptClass");
         }
 
-        public String ConvertBrainfuck(String Sauce, String sname, String refs)
+        public string ConvertBrainfuck(string Sauce, string sname, string refs)
         {
             GameObject gameObject = GameObject.Find("MortimersScriptingMod");
             var bfb = gameObject.AddComponent<BrainfuckBehaviour>();
             bfb.init(Sauce);
-            return gameObject.GetComponent<ScriptHandler>()._cSauce;
+            return gameObject.GetComponent<ScriptHandler>().CSauce;
         }
 
-        public String ConvertOok(String Sauce, String sname, String refs)
+        public string ConvertOok(string Sauce, string sname, string refs)
         {
             GameObject gameObject = GameObject.Find("MortimersScriptingMod");
             var bfb = gameObject.AddComponent<OokBehaviour>();
             bfb.init(Sauce);
-            return gameObject.GetComponent<ScriptHandler>()._cSauce;
+            return gameObject.GetComponent<ScriptHandler>().CSauce;
         }
 
-        public String ConvertTrumpScript(String Sauce, String sname, String refs)
+        public string ConvertTrumpScript(string Sauce, string sname, string refs)
         {
             return new TrumpScript.TrumpScript().Convert(Sauce);
         }
@@ -420,12 +423,16 @@ namespace BesiegeScriptingMod
         /// Adds the Script with the defined $sname to the Dictionary 'Scripts'
         /// </summary>
         /// <param name="sname">Name of the Script</param>
-        public void AddScript(String sname)
+        public void AddScript(string sname)
         {
             if (!Scripts.ContainsKey(sname))
             {
                 Scripts.Add(sname, new Script(_folder + "/" + sname + _extensionDot, _folder + "/" + sname + ".ref"));
             }
         }
+
+        private delegate bool ExecuteDeg(string refs, string sauce, List<GameObject> gos, string sname, ref Dictionary<Tuple<string, GameObject>, Component> addedScripts);
+
+        private delegate string ConvertDeg(string Sauce, string sname, string refs);
     }
 }

@@ -1,32 +1,35 @@
-﻿using System;
+﻿#region usings
+
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+
+#endregion
 
 namespace BesiegeScriptingMod.Chef
 {
     public class Recipe
     {
-        private String title;
-        private Dictionary<String, Ingredient> ingredients;
-        private String comment;
+        private string comment;
         private int cookingtime;
-        private int oventemp;
         private int gasmark;
+        private Dictionary<string, Ingredient> ingredients;
         private List<Method> methods;
+        private int oventemp;
         private int serves;
+        private readonly string title;
 
-        public Recipe(String title)
+        public Recipe(string title)
         {
             this.title = title;
         }
 
-        public void setIngredients(String ingredients)
+        public void setIngredients(string ingredients)
         {
-            this.ingredients = new Dictionary<String, Ingredient>
+            this.ingredients = new Dictionary<string, Ingredient>
                 ();
             TextReader scanner = new StreamReader(ingredients);
-            String s = ingredients;
+            string s = ingredients;
             int numLines = s.Length - s.Replace(Util.Util.getNewLine(), string.Empty).Length;
             int i = 0;
             scanner.ReadLine();
@@ -39,40 +42,40 @@ namespace BesiegeScriptingMod.Chef
             }
         }
 
-        public void setComments(String comment)
+        public void setComments(string comment)
         {
             this.comment = comment;
         }
 
-        public void setMethod(String method)
+        public void setMethod(string method)
         {
-            this.methods = new List<Method>();
+            methods = new List<Method>();
             method = method.Replace("\n", "");
             method = method.Replace("\\. ", ".");
-            String[] strings = Regex.Split(method, "\\.");
+            string[] strings = Regex.Split(method, "\\.");
             //Clearing the 'Method.' header
             for (int i = 1; i < strings.Length; i++)
             {
-                this.methods.Add(new Method(strings[i] + ".", i));
+                methods.Add(new Method(strings[i] + ".", i));
             }
         }
 
-        public void setCookingTime(String cookingtime)
+        public void setCookingTime(string cookingtime)
         {
             this.cookingtime = int.Parse(cookingtime.Split()[2]);
         }
 
-        public void setOvenTemp(String oventemp)
+        public void setOvenTemp(string oventemp)
         {
             this.oventemp = int.Parse(oventemp.Split()[3]);
             if (Regex.Match(oventemp, "gas mark").Success)
             {
-                String mark = oventemp.Split()[8];
-                this.gasmark = int.Parse(mark.Substring(0, mark.Length - 1));
+                string mark = oventemp.Split()[8];
+                gasmark = int.Parse(mark.Substring(0, mark.Length - 1));
             }
         }
 
-        public void setServes(String serves)
+        public void setServes(string serves)
         {
             this.serves = int.Parse(serves.Substring("Serves ".Length, serves.Length - 1));
         }
@@ -82,17 +85,17 @@ namespace BesiegeScriptingMod.Chef
             return serves;
         }
 
-        public String getTitle()
+        public string getTitle()
         {
             return title;
         }
 
-        public int getIngredientValue(String s)
+        public int getIngredientValue(string s)
         {
             return ingredients[s].getAmount();
         }
 
-        public void setIngredientValue(String s, int n)
+        public void setIngredientValue(string s, int n)
         {
             ingredients[s].setAmount(n);
         }
@@ -107,7 +110,7 @@ namespace BesiegeScriptingMod.Chef
             return methods;
         }
 
-        public Dictionary<String, Ingredient> getIngredients()
+        public Dictionary<string, Ingredient> getIngredients()
         {
             return ingredients;
         }

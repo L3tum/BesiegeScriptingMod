@@ -22,11 +22,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-using System;
 
 namespace NLua.Method
 {
-	/*
+    /*
 	 * Base wrapper class for Lua function event handlers.
 	 * Subclasses that do actual event handling are created
 	 * at runtime.
@@ -34,19 +33,21 @@ namespace NLua.Method
 	 * Author: Fabio Mascarenhas
 	 * Version: 1.0
 	 */
-	public class LuaEventHandler
-	{
-		public LuaFunction handler = null;
 
-		// CP: Fix provided by Ben Bryant for delegates with one param
-		// link: http://luaforge.net/forum/message.php?msg_id=9318
-		public void HandleEvent (object[] args)
-		{
-			handler.Call (args);
-		}
-		//public void handleEvent(object sender,object data) 
-		//{
-		//	handler.call(new object[] { sender,data },new Type[0]);
-		//}
-	}
+    public class LuaEventHandler
+    {
+        public LuaFunction handler = null;
+
+        // CP: Fix provided by Ben Bryant for delegates with one param
+        // link: http://luaforge.net/forum/message.php?msg_id=9318
+        public void HandleEvent(object[] args)
+        {
+            handler.Call(args);
+        }
+
+        //{
+        //public void handleEvent(object sender,object data) 
+        //	handler.call(new object[] { sender,data },new Type[0]);
+        //}
+    }
 }

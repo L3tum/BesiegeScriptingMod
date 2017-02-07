@@ -23,65 +23,64 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-using System;
-using System.Text;
-using System.Collections.Generic;
 
 namespace NLua
 {
-	#if USE_KOPILUA
+#if USE_KOPILUA
 	using LuaCore  = KopiLua.Lua;
 	using LuaState = KopiLua.LuaState;
 	#else
-	using LuaCore  = KeraLua.Lua;
-	using LuaState = KeraLua.LuaState;
-	#endif
 
-	public class LuaUserData : LuaBase
-	{
-		public LuaUserData (int reference, Lua interpreter)
-		{
-			_Reference = reference;
-			_Interpreter = interpreter;
-		}
+    #region usings
 
-		/*
+    using LuaCore = KeraLua.Lua;
+
+    #endregion
+
+#endif
+
+    public class LuaUserData : LuaBase
+    {
+        public LuaUserData(int reference, Lua interpreter)
+        {
+            _Reference = reference;
+            _Interpreter = interpreter;
+        }
+
+        /*
 		 * Indexer for string fields of the userdata
 		 */
-		public object this [string field] {
-			get {
-				return _Interpreter.GetObject (_Reference, field);
-			}
-			set {
-				_Interpreter.SetObject (_Reference, field, value);
-			}
-		}
 
-		/*
+        public object this[string field]
+        {
+            get { return _Interpreter.GetObject(_Reference, field); }
+            set { _Interpreter.SetObject(_Reference, field, value); }
+        }
+
+        /*
 		 * Indexer for numeric fields of the userdata
 		 */
-		public object this [object field] {
-			get {
-				return _Interpreter.GetObject (_Reference, field);
-			}
-			set {
-				_Interpreter.SetObject (_Reference, field, value);
-			}
-		}
 
-		/*
+        public object this[object field]
+        {
+            get { return _Interpreter.GetObject(_Reference, field); }
+            set { _Interpreter.SetObject(_Reference, field, value); }
+        }
+
+        /*
 		 * Calls the userdata and returns its return values inside
 		 * an array
 		 */
-		public object[] Call (params object[] args)
-		{
-			return _Interpreter.CallFunction (this, args);
-		}
+
+        public object[] Call(params object[] args)
+        {
+            return _Interpreter.CallFunction(this, args);
+        }
 
 
-		public override string ToString ()
-		{
-			return "userdata";
-		}
-	}
+        public override string ToString()
+        {
+            return "userdata";
+        }
+    }
 }

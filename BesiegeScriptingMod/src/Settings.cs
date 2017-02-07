@@ -1,17 +1,20 @@
-﻿using System;
+﻿#region usings
+
 using System.IO;
 using System.Xml.Serialization;
 using UnityEngine;
+
+#endregion
 
 namespace BesiegeScriptingMod
 {
     public static class Settings
     {
         public static Rect WinSize;
-        public static bool Tutorial { get; internal set; }
-        public static String LastIde { get; internal set; }
         public static bool useAPI;
-        private static readonly String SettingsPath = Application.dataPath + "/Mods/Scripts/settings.xml";
+        private static readonly string SettingsPath = Application.dataPath + "/Mods/Scripts/settings.xml";
+        public static bool Tutorial { get; internal set; }
+        public static string LastIde { get; internal set; }
 
         public static void Save()
         {
@@ -23,8 +26,7 @@ namespace BesiegeScriptingMod
         {
             if (File.Exists(SettingsPath))
             {
-
-                SaveSettings ss = (SaveSettings)new XmlSerializer(typeof (SaveSettings)).Deserialize(new StreamReader(SettingsPath));
+                SaveSettings ss = (SaveSettings) new XmlSerializer(typeof (SaveSettings)).Deserialize(new StreamReader(SettingsPath));
                 WinSize = ss.WinSize;
                 LastIde = ss.LastIde;
                 useAPI = ss.useAPI;
@@ -43,19 +45,19 @@ namespace BesiegeScriptingMod
 
     public class SaveSettings
     {
-        public Rect WinSize;
-        public String LastIde;
+        public string LastIde;
         public bool useAPI;
-        public SaveSettings(Rect winSize, String lastIde, bool useApi)
+        public Rect WinSize;
+
+        public SaveSettings(Rect winSize, string lastIde, bool useApi)
         {
-            this.WinSize = winSize;
-            this.LastIde = lastIde;
+            WinSize = winSize;
+            LastIde = lastIde;
             useAPI = useApi;
         }
 
         public SaveSettings()
         {
-            
         }
     }
 }

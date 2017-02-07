@@ -1,11 +1,14 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
+
+#endregion
 
 namespace BesiegeScriptingMod.Util
 {
@@ -18,7 +21,7 @@ namespace BesiegeScriptingMod.Util
         /// <param Name="refs">References specified by $user</param>
         /// <param Name="name">$Name of the script</param>
         /// <returns>Source code in Python format</returns>
-        public static String Compile(FileInfo sauce, string[] refs, string name)
+        public static string Compile(FileInfo sauce, string[] refs, string name)
         {
             NRefactoryToPythonConverter indentString = NRefactoryToPythonConverter.Create(sauce.FullName);
             indentString.IndentString = new string(' ', 2);
@@ -81,19 +84,19 @@ namespace BesiegeScriptingMod.Util
         /// <param Name="name">The Name of the script and class specified by $user</param>
         /// <param Name="refs">The References for this Script</param>
         /// <returns>Source Code wrapped into a class</returns>
-        public static String getMethodsWithClass(String sauce, String name, String[] refs)
+        public static string getMethodsWithClass(string sauce, string name, string[] refs)
         {
-            String finalSauce = "";
-            String usings = "";
-            String[] lines = splitStringAtNewline(sauce);
-            Dictionary<String, IEnumerable<string>> nss = new Dictionary<string, IEnumerable<String>>();
+            string finalSauce = "";
+            string usings = "";
+            string[] lines = splitStringAtNewline(sauce);
+            Dictionary<string, IEnumerable<string>> nss = new Dictionary<string, IEnumerable<string>>();
             foreach (string @ref in refs)
             {
-                String reff = @ref.Trim();
+                string reff = @ref.Trim();
                 Assembly assembly = Assembly.LoadFrom(@ref);
                 var namespaces = assembly.GetTypes()
-                        .Select(t => t.Namespace)
-                        .Distinct();
+                    .Select(t => t.Namespace)
+                    .Distinct();
                 nss.Add(@ref, namespaces);
             }
             for (int i = 0; i < lines.Length; i++)
@@ -103,18 +106,18 @@ namespace BesiegeScriptingMod.Util
                     if (lines[i].EndsWith(";"))
                     {
                         usings += lines[i] + getNewLine();
-                        lines[i] = String.Empty;
+                        lines[i] = string.Empty;
                     }
                 }
-                if (lines[i].Contains("using") || String.IsNullOrEmpty(lines[i])) continue;
-                foreach (string ns in from key in nss.Keys from ns in nss[key] where !String.IsNullOrEmpty(ns) where lines[i].Contains((ns + ".")) select ns)
+                if (lines[i].Contains("using") || string.IsNullOrEmpty(lines[i])) continue;
+                foreach (string ns in from key in nss.Keys from ns in nss[key] where !string.IsNullOrEmpty(ns) where lines[i].Contains(ns + ".") select ns)
                 {
                     lines[i] = Regex.Replace(lines[i], ns + ".", string.Empty);
                 }
                 lines[i] = lines[i] + getNewLine();
             }
-            lines = lines.Where(x => !string.IsNullOrEmpty(x) && !x.Equals("\r\n") && !x.Equals("\r") && !x.Equals("\n") && !String.IsNullOrEmpty(x.Trim())).ToArray();
-            sauce = String.Concat(lines);
+            lines = lines.Where(x => !string.IsNullOrEmpty(x) && !x.Equals("\r\n") && !x.Equals("\r") && !x.Equals("\n") && !string.IsNullOrEmpty(x.Trim())).ToArray();
+            sauce = string.Concat(lines);
             if (!usings.Contains("using UnityEngine;"))
             {
                 usings += "using UnityEngine;" + getNewLine();
@@ -132,20 +135,20 @@ namespace BesiegeScriptingMod.Util
         /// <param Name="name">The Name of the script and class specified by $user</param>
         /// <param Name="refs">The References for this Script</param>
         /// <returns>Source Code wrapped into a class</returns>
-        public static String getMethodsWithClassPython(String sauce, String name, String[] refs)
+        public static string getMethodsWithClassPython(string sauce, string name, string[] refs)
         {
-            String finalSauce = "";
-            String imports = "";
-            String[] lines = splitStringAtNewline(sauce);
+            string finalSauce = "";
+            string imports = "";
+            string[] lines = splitStringAtNewline(sauce);
 
-            Dictionary<String, IEnumerable<String>> nss = new Dictionary<string, IEnumerable<String>>();
+            Dictionary<string, IEnumerable<string>> nss = new Dictionary<string, IEnumerable<string>>();
             foreach (string @ref in refs)
             {
-                String reff = @ref.Trim();
+                string reff = @ref.Trim();
                 Assembly assembly = Assembly.LoadFrom(@ref);
                 var namespaces = assembly.GetTypes()
-                        .Select(t => t.Namespace)
-                        .Distinct();
+                    .Select(t => t.Namespace)
+                    .Distinct();
                 nss.Add(@ref, namespaces);
             }
 
@@ -156,11 +159,11 @@ namespace BesiegeScriptingMod.Util
                     if (!lines[i].Contains(";") && !lines[i].Contains(":"))
                     {
                         imports += lines[i] + getNewLine();
-                        lines[i] = String.Empty;
+                        lines[i] = string.Empty;
                     }
                     else
                     {
-                        UnityEngine.Debug.LogError(
+                        Debug.LogError(
                             "Please make sure to write each import and the source code on separate lines!");
                     }
                 }
@@ -168,13 +171,13 @@ namespace BesiegeScriptingMod.Util
                 {
                     lines[i] = @"  " + lines[i] + getNewLine();
                 }
-                if (lines[i].Contains("import") || String.IsNullOrEmpty(lines[i])) continue;
-                foreach (string ns in from key in nss.Keys from ns in nss[key] where !String.IsNullOrEmpty(ns) where lines[i].Contains((ns + ".")) select ns)
+                if (lines[i].Contains("import") || string.IsNullOrEmpty(lines[i])) continue;
+                foreach (string ns in from key in nss.Keys from ns in nss[key] where !string.IsNullOrEmpty(ns) where lines[i].Contains(ns + ".") select ns)
                 {
                     lines[i] = Regex.Replace(lines[i], ns + ".", string.Empty);
                 }
             }
-            sauce = String.Concat(lines);
+            sauce = string.Concat(lines);
             if (!imports.Contains("from UnityEngine import *"))
             {
                 imports += "from UnityEngine import *" + getNewLine();
@@ -189,7 +192,7 @@ namespace BesiegeScriptingMod.Util
         /// </summary>
         /// <param Name="sauce">Source String to split</param>
         /// <returns>String array of splitted source</returns>
-        public static String[] splitStringAtNewline(String sauce)
+        public static string[] splitStringAtNewline(string sauce)
         {
             return sauce.Split(new[] {"\r\n", "\r", "\n"}, StringSplitOptions.RemoveEmptyEntries);
         }
@@ -199,25 +202,25 @@ namespace BesiegeScriptingMod.Util
         /// </summary>
         /// <param Name="sauce">Source String to split</param>
         /// <returns>String array of splitted source</returns>
-        public static String[] splitStringAtNewlineAndSpace(String sauce)
+        public static string[] splitStringAtNewlineAndSpace(string sauce)
         {
-            return sauce.Split(new[] { " ", "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            return sauce.Split(new[] {" ", "\r\n", "\r", "\n"}, StringSplitOptions.RemoveEmptyEntries);
         }
 
         /// <summary>
         /// Gives a new line for the specific OS
         /// </summary>
         /// <returns>New Line Character for OS</returns>
-        public static String getNewLine()
+        public static string getNewLine()
         {
             if (Application.platform.Equals(RuntimePlatform.WindowsEditor) ||
                 Application.platform.Equals(RuntimePlatform.WindowsPlayer))
             {
                 return "\r\n";
             }
-            else if (Application.platform.Equals(RuntimePlatform.OSXPlayer) ||
-                     Application.platform.Equals(RuntimePlatform.OSXDashboardPlayer) ||
-                     Application.platform.Equals(RuntimePlatform.OSXEditor) || Application.platform.Equals(RuntimePlatform.LinuxPlayer))
+            if (Application.platform.Equals(RuntimePlatform.OSXPlayer) ||
+                Application.platform.Equals(RuntimePlatform.OSXDashboardPlayer) ||
+                Application.platform.Equals(RuntimePlatform.OSXEditor) || Application.platform.Equals(RuntimePlatform.LinuxPlayer))
             {
                 return "\n";
             }
@@ -229,66 +232,22 @@ namespace BesiegeScriptingMod.Util
         /// </summary>
         /// <param Name="sauce">Source Code</param>
         /// <returns>New-Line-Character</returns>
-        public static String getNewLineInString(String sauce)
+        public static string getNewLineInString(string sauce)
         {
             if (sauce.Contains("\r\n"))
             {
                 return "\r\n";
             }
-            else if (sauce.Contains("\r"))
+            if (sauce.Contains("\r"))
             {
                 return "\r";
             }
-            else if (sauce.Contains("\n"))
+            if (sauce.Contains("\n"))
             {
                 return "\n";
             }
-            else
-            {
-                return null;
-            }
+            return null;
         }
-
-        #region Java[OBSOLETE]
-        /*
-        public static void compileJava(String Name, String fileName, String[] javaRefs)
-        {
-
-            if (Application.platform.Equals(RuntimePlatform.WindowsPlayer) ||
-                Application.platform.Equals(RuntimePlatform.WindowsEditor))
-            {
-                var process = new Process();
-                var startInfo = new ProcessStartInfo
-                {
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    FileName = "cmd.exe",
-                    Arguments = "jar cf " + Application.dataPath + "/Mods/Scripts/TempScripts/" +
-                                Name + ".jar " + fileName + " " + string.Concat(javaRefs)
-                };
-                process.StartInfo = startInfo;
-                process.Start();
-                process.WaitForExit();
-            }
-            else if (Application.platform.Equals(RuntimePlatform.LinuxPlayer) ||
-                     Application.platform.Equals(RuntimePlatform.OSXEditor) ||
-                     Application.platform.Equals(RuntimePlatform.OSXPlayer))
-            {
-                var psi = new ProcessStartInfo
-                {
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    FileName = "/bin/bash.sh",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    Arguments = "jar cf " + Application.dataPath + "/Mods/Scripts/TempScripts/" +
-                                Name + ".jar " + fileName + " " + string.Concat(javaRefs)
-                };
-
-                var p = Process.Start(psi);
-                p.WaitForExit();
-            }
-        }
-        */
-        #endregion 
 
         /// <summary>
         /// Converts Unity-Script source into C# source
@@ -440,5 +399,48 @@ namespace BesiegeScriptingMod.Util
 
             return input;
         }
+
+        #region Java[OBSOLETE]
+
+        /*
+        public static void compileJava(String Name, String fileName, String[] javaRefs)
+        {
+
+            if (Application.platform.Equals(RuntimePlatform.WindowsPlayer) ||
+                Application.platform.Equals(RuntimePlatform.WindowsEditor))
+            {
+                var process = new Process();
+                var startInfo = new ProcessStartInfo
+                {
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    FileName = "cmd.exe",
+                    Arguments = "jar cf " + Application.dataPath + "/Mods/Scripts/TempScripts/" +
+                                Name + ".jar " + fileName + " " + string.Concat(javaRefs)
+                };
+                process.StartInfo = startInfo;
+                process.Start();
+                process.WaitForExit();
+            }
+            else if (Application.platform.Equals(RuntimePlatform.LinuxPlayer) ||
+                     Application.platform.Equals(RuntimePlatform.OSXEditor) ||
+                     Application.platform.Equals(RuntimePlatform.OSXPlayer))
+            {
+                var psi = new ProcessStartInfo
+                {
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    FileName = "/bin/bash.sh",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    Arguments = "jar cf " + Application.dataPath + "/Mods/Scripts/TempScripts/" +
+                                Name + ".jar " + fileName + " " + string.Concat(javaRefs)
+                };
+
+                var p = Process.Start(psi);
+                p.WaitForExit();
+            }
+        }
+        */
+
+        #endregion
     }
 }

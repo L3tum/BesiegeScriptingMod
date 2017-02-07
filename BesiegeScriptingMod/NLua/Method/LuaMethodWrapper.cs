@@ -22,294 +22,346 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
+#region usings
+
 using System;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using KeraLua;
 using NLua.Exceptions;
 using NLua.Extensions;
 
+#endregion
+
 namespace NLua.Method
 {
-	#if USE_KOPILUA
+#if USE_KOPILUA
 	using LuaCore  = KopiLua.Lua;
 	using LuaState = KopiLua.LuaState;
 	using LuaNativeFunction = KopiLua.LuaNativeFunction;
 	#else
-	using LuaCore  = KeraLua.Lua;
-	using LuaState = KeraLua.LuaState;
-	using LuaNativeFunction = KeraLua.LuaNativeFunction;
-	#endif
 
-	/*
+    #region usings
+
+    using LuaCore = KeraLua.Lua;
+
+    #endregion
+
+#endif
+
+    /*
 	 * Argument extraction with type-conversion function
 	 */
-	delegate object ExtractValue (LuaState luaState, int stackPos);
 
-	/*
+    internal delegate object ExtractValue(LuaState luaState, int stackPos);
+
+    /*
 	 * Wrapper class for methods/constructors accessed from Lua.
 	 * 
 	 * Author: Fabio Mascarenhas
 	 * Version: 1.0
 	 */
-	class LuaMethodWrapper
-	{
-		internal LuaNativeFunction invokeFunction;
-		ObjectTranslator _Translator;
-		MethodBase _Method;
-		MethodCache _LastCalledMethod = new MethodCache ();
-		string _MethodName;
-		MemberInfo[] _Members;
-		ExtractValue _ExtractTarget;
-		object _Target;
-		bool _IsStatic;
 
-		/*
+    internal class LuaMethodWrapper
+    {
+        private readonly ExtractValue _ExtractTarget;
+        private readonly bool _IsStatic;
+        private MethodCache _LastCalledMethod;
+        private readonly MemberInfo[] _Members;
+        private readonly MethodBase _Method;
+        private readonly string _MethodName;
+        private readonly object _Target;
+        private readonly ObjectTranslator _Translator;
+        internal LuaNativeFunction invokeFunction;
+
+        /*
 		 * Constructs the wrapper for a known MethodBase instance
 		 */
-		public LuaMethodWrapper (ObjectTranslator translator, object target, ProxyType targetType, MethodBase method)
-		{
-			invokeFunction = new LuaNativeFunction (this.Call);
-			_Translator = translator;
-			_Target = target;
 
-			if (targetType != null)
-				_ExtractTarget = translator.typeChecker.GetExtractor (targetType);
+        public LuaMethodWrapper(ObjectTranslator translator, object target, ProxyType targetType, MethodBase method)
+        {
+            invokeFunction = Call;
+            _Translator = translator;
+            _Target = target;
 
-			_Method = method;
-			_MethodName = method.Name;
-			_IsStatic = method.IsStatic;
-		}
+            if (targetType != null)
+                _ExtractTarget = translator.typeChecker.GetExtractor(targetType);
 
-		/*
+            _Method = method;
+            _MethodName = method.Name;
+            _IsStatic = method.IsStatic;
+        }
+
+        /*
 		 * Constructs the wrapper for a known method name
 		 */
-		public LuaMethodWrapper (ObjectTranslator translator, ProxyType targetType, string methodName, BindingFlags bindingType)
-		{
-			invokeFunction = new LuaNativeFunction (this.Call);
 
-			_Translator = translator;
-			_MethodName = methodName;
+        public LuaMethodWrapper(ObjectTranslator translator, ProxyType targetType, string methodName, BindingFlags bindingType)
+        {
+            invokeFunction = Call;
 
-			if (targetType != null)
-				_ExtractTarget = translator.typeChecker.GetExtractor (targetType);
+            _Translator = translator;
+            _MethodName = methodName;
 
-			_IsStatic = (bindingType & BindingFlags.Static) == BindingFlags.Static;
-			_Members  = GetMethodsRecursively (targetType.UnderlyingSystemType, methodName, bindingType | BindingFlags.Public);
-		}
+            if (targetType != null)
+                _ExtractTarget = translator.typeChecker.GetExtractor(targetType);
 
-		MethodInfo [] GetMethodsRecursively (Type type, string methodName, BindingFlags bindingType)
-		{
-			if (type == typeof(object))
-				return type.GetMethods (methodName, bindingType);
+            _IsStatic = (bindingType & BindingFlags.Static) == BindingFlags.Static;
+            _Members = GetMethodsRecursively(targetType.UnderlyingSystemType, methodName, bindingType | BindingFlags.Public);
+        }
 
-			var methods = type.GetMethods (methodName, bindingType);
+        private MethodInfo[] GetMethodsRecursively(Type type, string methodName, BindingFlags bindingType)
+        {
+            if (type == typeof (object))
+                return type.GetMethods(methodName, bindingType);
+
+            var methods = type.GetMethods(methodName, bindingType);
 #if NETFX_CORE
 			var baseMethods = GetMethodsRecursively (type.GetTypeInfo ().BaseType, methodName, bindingType);
 #else
-			var baseMethods = GetMethodsRecursively (type.BaseType, methodName, bindingType);
+            var baseMethods = GetMethodsRecursively(type.BaseType, methodName, bindingType);
 #endif
 
-			return methods.Concat (baseMethods).ToArray ();
-		}
+            return methods.Concat(baseMethods).ToArray();
+        }
 
-		/// <summary>
-		/// Convert C# exceptions into Lua errors
-		/// </summary>
-		/// <returns>num of things on stack</returns>
-		/// <param name="e">null for no pending exception</param>
-		int SetPendingException (Exception e)
-		{
-			return _Translator.interpreter.SetPendingException (e);
-		}
+        /// <summary>
+        /// Convert C# exceptions into Lua errors
+        /// </summary>
+        /// <returns>num of things on stack</returns>
+        /// <param name="e">null for no pending exception</param>
+        private int SetPendingException(Exception e)
+        {
+            return _Translator.interpreter.SetPendingException(e);
+        }
 
-		/*
+        /*
 		 * Calls the method. Receives the arguments from the Lua stack
 		 * and returns values in it.
 		 */
-		int Call (LuaState luaState)
-		{
-			var methodToCall = _Method;
-			object targetObject = _Target;
-			bool failedCall = true;
-			int nReturnValues = 0;
 
-			if (!LuaLib.LuaCheckStack (luaState, 5))
-				throw new LuaException ("Lua stack overflow");
+        private int Call(LuaState luaState)
+        {
+            var methodToCall = _Method;
+            object targetObject = _Target;
+            bool failedCall = true;
+            int nReturnValues = 0;
 
-			bool isStatic = _IsStatic;
-			SetPendingException (null);
+            if (!LuaLib.LuaCheckStack(luaState, 5))
+                throw new LuaException("Lua stack overflow");
 
-			if (methodToCall == null) { // Method from name
-				if (isStatic)
-					targetObject = null;
-				else
-					targetObject = _ExtractTarget (luaState, 1);
+            bool isStatic = _IsStatic;
+            SetPendingException(null);
 
-				if (_LastCalledMethod.cachedMethod != null) { // Cached?
-					int numStackToSkip = isStatic ? 0 : 1; // If this is an instance invoe we will have an extra arg on the stack for the targetObject
-					int numArgsPassed = LuaLib.LuaGetTop (luaState) - numStackToSkip;
-					MethodBase method = _LastCalledMethod.cachedMethod;
+            if (methodToCall == null)
+            {
+                // Method from name
+                if (isStatic)
+                    targetObject = null;
+                else
+                    targetObject = _ExtractTarget(luaState, 1);
 
-					if (numArgsPassed == _LastCalledMethod.argTypes.Length) { // No. of args match?
-						if (!LuaLib.LuaCheckStack (luaState, _LastCalledMethod.outList.Length + 6))
-							throw new LuaException ("Lua stack overflow");
+                if (_LastCalledMethod.cachedMethod != null)
+                {
+                    // Cached?
+                    int numStackToSkip = isStatic ? 0 : 1; // If this is an instance invoe we will have an extra arg on the stack for the targetObject
+                    int numArgsPassed = LuaLib.LuaGetTop(luaState) - numStackToSkip;
+                    MethodBase method = _LastCalledMethod.cachedMethod;
 
-						object [] args = _LastCalledMethod.args;
+                    if (numArgsPassed == _LastCalledMethod.argTypes.Length)
+                    {
+                        // No. of args match?
+                        if (!LuaLib.LuaCheckStack(luaState, _LastCalledMethod.outList.Length + 6))
+                            throw new LuaException("Lua stack overflow");
 
-						try {
-							for (int i = 0; i < _LastCalledMethod.argTypes.Length; i++) {
+                        object[] args = _LastCalledMethod.args;
 
-								MethodArgs type = _LastCalledMethod.argTypes [i];
+                        try
+                        {
+                            for (int i = 0; i < _LastCalledMethod.argTypes.Length; i++)
+                            {
+                                MethodArgs type = _LastCalledMethod.argTypes[i];
 
-								int index = i + 1 + numStackToSkip;
+                                int index = i + 1 + numStackToSkip;
 
-								Func<int, object> valueExtractor = (currentParam) => {
-									return type.extractValue (luaState, currentParam);							
-								};
+                                Func<int, object> valueExtractor = currentParam => { return type.extractValue(luaState, currentParam); };
 
-								if (_LastCalledMethod.argTypes [i].isParamsArray) {
-									int count = index - _LastCalledMethod.argTypes.Length;
-									Array paramArray = _Translator.TableToArray (valueExtractor, type.paramsArrayType, index, count);
-									args [_LastCalledMethod.argTypes [i].index] = paramArray;
-								} else {
-									args [type.index] = valueExtractor (index);
-								}
+                                if (_LastCalledMethod.argTypes[i].isParamsArray)
+                                {
+                                    int count = index - _LastCalledMethod.argTypes.Length;
+                                    Array paramArray = _Translator.TableToArray(valueExtractor, type.paramsArrayType, index, count);
+                                    args[_LastCalledMethod.argTypes[i].index] = paramArray;
+                                }
+                                else
+                                {
+                                    args[type.index] = valueExtractor(index);
+                                }
 
-								if (_LastCalledMethod.args [_LastCalledMethod.argTypes [i].index] == null &&
-									!LuaLib.LuaIsNil (luaState, i + 1 + numStackToSkip))
-									throw new LuaException (string.Format("argument number {0} is invalid",(i + 1)));
-							}
+                                if (_LastCalledMethod.args[_LastCalledMethod.argTypes[i].index] == null &&
+                                    !LuaLib.LuaIsNil(luaState, i + 1 + numStackToSkip))
+                                    throw new LuaException(string.Format("argument number {0} is invalid", i + 1));
+                            }
 
-							if (_IsStatic)
-								_Translator.Push (luaState, method.Invoke (null, _LastCalledMethod.args));
-							else {
-								if (method.IsConstructor)
-									_Translator.Push (luaState, ((ConstructorInfo)method).Invoke (_LastCalledMethod.args));
-								else
-									_Translator.Push (luaState, method.Invoke (targetObject, _LastCalledMethod.args));
-							}
+                            if (_IsStatic)
+                                _Translator.Push(luaState, method.Invoke(null, _LastCalledMethod.args));
+                            else
+                            {
+                                if (method.IsConstructor)
+                                    _Translator.Push(luaState, ((ConstructorInfo) method).Invoke(_LastCalledMethod.args));
+                                else
+                                    _Translator.Push(luaState, method.Invoke(targetObject, _LastCalledMethod.args));
+                            }
 
-							failedCall = false;
-						} catch (TargetInvocationException e) {
-							// Failure of method invocation
-							return SetPendingException (e.GetBaseException ());
-						} catch (Exception e) {
-							if (_Members.Length == 1) // Is the method overloaded?
-								// No, throw error
-								return SetPendingException (e);
-						}
-					}
-				}
+                            failedCall = false;
+                        }
+                        catch (TargetInvocationException e)
+                        {
+                            // Failure of method invocation
+                            return SetPendingException(e.GetBaseException());
+                        }
+                        catch (Exception e)
+                        {
+                            if (_Members.Length == 1) // Is the method overloaded?
+                                // No, throw error
+                                return SetPendingException(e);
+                        }
+                    }
+                }
 
-				// Cache miss
-				if (failedCall) {
-					// System.Diagnostics.Debug.WriteLine("cache miss on " + methodName);
-					// If we are running an instance variable, we can now pop the targetObject from the stack
-					if (!isStatic) {
-						if (targetObject == null) {
-							_Translator.ThrowError (luaState, String.Format ("instance method '{0}' requires a non null target object", _MethodName));
-							LuaLib.LuaPushNil (luaState);
-							return 1;
-						}
+                // Cache miss
+                if (failedCall)
+                {
+                    // System.Diagnostics.Debug.WriteLine("cache miss on " + methodName);
+                    // If we are running an instance variable, we can now pop the targetObject from the stack
+                    if (!isStatic)
+                    {
+                        if (targetObject == null)
+                        {
+                            _Translator.ThrowError(luaState, string.Format("instance method '{0}' requires a non null target object", _MethodName));
+                            LuaLib.LuaPushNil(luaState);
+                            return 1;
+                        }
 
-						LuaLib.LuaRemove (luaState, 1); // Pops the receiver
-					}
+                        LuaLib.LuaRemove(luaState, 1); // Pops the receiver
+                    }
 
-					bool hasMatch = false;
-					string candidateName = null;
+                    bool hasMatch = false;
+                    string candidateName = null;
 
-					foreach (var member in _Members) {
+                    foreach (var member in _Members)
+                    {
 #if NETFX_CORE
 						candidateName = member.DeclaringType.Name + "." + member.Name;
 #else
-						candidateName = member.ReflectedType.Name + "." + member.Name;
+                        candidateName = member.ReflectedType.Name + "." + member.Name;
 #endif
-						var m = (MethodInfo)member;
-						bool isMethod = _Translator.MatchParameters (luaState, m, ref _LastCalledMethod);
+                        var m = (MethodInfo) member;
+                        bool isMethod = _Translator.MatchParameters(luaState, m, ref _LastCalledMethod);
 
-						if (isMethod) {
-							hasMatch = true;
-							break;
-						}
-					}
+                        if (isMethod)
+                        {
+                            hasMatch = true;
+                            break;
+                        }
+                    }
 
-					if (!hasMatch) {
-						string msg = (candidateName == null) ? "invalid arguments to method call" : ("invalid arguments to method: " + candidateName);
-						_Translator.ThrowError (luaState, msg);
-						LuaLib.LuaPushNil (luaState);
-						return 1;
-					}
-				}
-			} else { // Method from MethodBase instance
-				if (methodToCall.ContainsGenericParameters) {
-					
-					_Translator.MatchParameters (luaState, methodToCall, ref _LastCalledMethod);
+                    if (!hasMatch)
+                    {
+                        string msg = candidateName == null ? "invalid arguments to method call" : "invalid arguments to method: " + candidateName;
+                        _Translator.ThrowError(luaState, msg);
+                        LuaLib.LuaPushNil(luaState);
+                        return 1;
+                    }
+                }
+            }
+            else
+            {
+                // Method from MethodBase instance
+                if (methodToCall.ContainsGenericParameters)
+                {
+                    _Translator.MatchParameters(luaState, methodToCall, ref _LastCalledMethod);
 
-					if (methodToCall.IsGenericMethodDefinition) {
-						//need to make a concrete type of the generic method definition
-						var typeArgs = new List<Type> ();
+                    if (methodToCall.IsGenericMethodDefinition)
+                    {
+                        //need to make a concrete type of the generic method definition
+                        var typeArgs = new List<Type>();
 
-						foreach (object arg in _LastCalledMethod.args)
-							typeArgs.Add (arg.GetType ());
+                        foreach (object arg in _LastCalledMethod.args)
+                            typeArgs.Add(arg.GetType());
 
-						var concreteMethod = (methodToCall as MethodInfo).MakeGenericMethod (typeArgs.ToArray ());
-						_Translator.Push (luaState, concreteMethod.Invoke (targetObject, _LastCalledMethod.args));
-						failedCall = false;
-					} else if (methodToCall.ContainsGenericParameters) {
-						_Translator.ThrowError (luaState, "unable to invoke method on generic class as the current method is an open generic method");
-						LuaLib.LuaPushNil (luaState);
-						return 1;
-					}
-				} else {
-					if (!methodToCall.IsStatic && !methodToCall.IsConstructor && targetObject == null) {
-						targetObject = _ExtractTarget (luaState, 1);
-						LuaLib.LuaRemove (luaState, 1); // Pops the receiver
-					}
+                        var concreteMethod = (methodToCall as MethodInfo).MakeGenericMethod(typeArgs.ToArray());
+                        _Translator.Push(luaState, concreteMethod.Invoke(targetObject, _LastCalledMethod.args));
+                        failedCall = false;
+                    }
+                    else if (methodToCall.ContainsGenericParameters)
+                    {
+                        _Translator.ThrowError(luaState, "unable to invoke method on generic class as the current method is an open generic method");
+                        LuaLib.LuaPushNil(luaState);
+                        return 1;
+                    }
+                }
+                else
+                {
+                    if (!methodToCall.IsStatic && !methodToCall.IsConstructor && targetObject == null)
+                    {
+                        targetObject = _ExtractTarget(luaState, 1);
+                        LuaLib.LuaRemove(luaState, 1); // Pops the receiver
+                    }
 
-					if (!_Translator.MatchParameters (luaState, methodToCall, ref _LastCalledMethod)) {
-						_Translator.ThrowError (luaState, "invalid arguments to method call");
-						LuaLib.LuaPushNil (luaState);
-						return 1;
-					}
-				}
-			}
+                    if (!_Translator.MatchParameters(luaState, methodToCall, ref _LastCalledMethod))
+                    {
+                        _Translator.ThrowError(luaState, "invalid arguments to method call");
+                        LuaLib.LuaPushNil(luaState);
+                        return 1;
+                    }
+                }
+            }
 
-			if (failedCall) {
-				if (!LuaLib.LuaCheckStack (luaState, _LastCalledMethod.outList.Length + 6))
-					throw new LuaException ("Lua stack overflow");
+            if (failedCall)
+            {
+                if (!LuaLib.LuaCheckStack(luaState, _LastCalledMethod.outList.Length + 6))
+                    throw new LuaException("Lua stack overflow");
 
-				try {
-					if (isStatic)
-						_Translator.Push (luaState, _LastCalledMethod.cachedMethod.Invoke (null, _LastCalledMethod.args));
-					else {
-						if (_LastCalledMethod.cachedMethod.IsConstructor)
-							_Translator.Push (luaState, ((ConstructorInfo)_LastCalledMethod.cachedMethod).Invoke (_LastCalledMethod.args));
-						else
-							_Translator.Push (luaState, _LastCalledMethod.cachedMethod.Invoke (targetObject, _LastCalledMethod.args));
-					}
-				} catch (TargetInvocationException e) {
-					return SetPendingException (e.GetBaseException ());
-				} catch (Exception e) {
-					return SetPendingException (e);
-				}
-			}
+                try
+                {
+                    if (isStatic)
+                        _Translator.Push(luaState, _LastCalledMethod.cachedMethod.Invoke(null, _LastCalledMethod.args));
+                    else
+                    {
+                        if (_LastCalledMethod.cachedMethod.IsConstructor)
+                            _Translator.Push(luaState, ((ConstructorInfo) _LastCalledMethod.cachedMethod).Invoke(_LastCalledMethod.args));
+                        else
+                            _Translator.Push(luaState, _LastCalledMethod.cachedMethod.Invoke(targetObject, _LastCalledMethod.args));
+                    }
+                }
+                catch (TargetInvocationException e)
+                {
+                    return SetPendingException(e.GetBaseException());
+                }
+                catch (Exception e)
+                {
+                    return SetPendingException(e);
+                }
+            }
 
-			// Pushes out and ref return values
-			for (int index = 0; index < _LastCalledMethod.outList.Length; index++) {
-				nReturnValues++;
-				_Translator.Push (luaState, _LastCalledMethod.args [_LastCalledMethod.outList [index]]);
-			}
+            // Pushes out and ref return values
+            for (int index = 0; index < _LastCalledMethod.outList.Length; index++)
+            {
+                nReturnValues++;
+                _Translator.Push(luaState, _LastCalledMethod.args[_LastCalledMethod.outList[index]]);
+            }
 
-			//by isSingle 2010-09-10 11:26:31 
-			//Desc: 
-			//  if not return void,we need add 1,
-			//  or we will lost the function's return value 
-			//  when call dotnet function like "int foo(arg1,out arg2,out arg3)" in lua code 
-			if (!_LastCalledMethod.IsReturnVoid && nReturnValues > 0)
-				nReturnValues++;
+            //by isSingle 2010-09-10 11:26:31 
+            //Desc: 
+            //  if not return void,we need add 1,
+            //  or we will lost the function's return value 
+            //  when call dotnet function like "int foo(arg1,out arg2,out arg3)" in lua code 
+            if (!_LastCalledMethod.IsReturnVoid && nReturnValues > 0)
+                nReturnValues++;
 
-			return nReturnValues < 1 ? 1 : nReturnValues;
-		}
-	}
+            return nReturnValues < 1 ? 1 : nReturnValues;
+        }
+    }
 }

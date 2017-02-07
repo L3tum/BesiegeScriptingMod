@@ -1,27 +1,25 @@
-﻿using System;
+﻿#region usings
+
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using ICSharpCode.NRefactory.Ast;
 using Microsoft.Scripting;
-using Mono.Cecil.Metadata;
-using UnityEngine;
+
+#endregion
 
 namespace BesiegeScriptingMod.LolCode
 {
-    class LolcodeInterpreter
+    internal class LolcodeInterpreter
     {
-        public String Sauce = "";
-        public List<String> pattern = new List<string>();
-        public List<String> replacements = new List<string>(); 
+        public List<string> pattern = new List<string>();
+        public List<string> replacements = new List<string>();
+        public string Sauce = "";
 
-        public LolcodeInterpreter(String Sauce)
+        public LolcodeInterpreter(string Sauce)
         {
             this.Sauce = Sauce;
         }
 
-        public String convert()
+        public string convert()
         {
             if (!Sauce.StartsWith("Hai 1.2"))
             {
@@ -32,12 +30,10 @@ namespace BesiegeScriptingMod.LolCode
             {
                 return new SyntaxErrorException("No KTHXBYE ending command!").ToString();
             }
-            else
-            {
-                Sauce = Sauce.Remove(Sauce.Length - 8);
-            }
-            
+            Sauce = Sauce.Remove(Sauce.Length - 8);
+
             #region Pattern
+
             pattern.Add(@"I HAS A ([a-zA-Z]+)( ITZ )([a-zA-Z0-9\.]+)"); //Variable declaration and init
             pattern.Add(@"I HAS A ([a-zA-Z]+)"); //Only declaration
             pattern.Add(@"([a-zA-Z]+) R (""?[a - zA - Z0 - 9\.] + ""?)"); //only init
@@ -59,8 +55,11 @@ namespace BesiegeScriptingMod.LolCode
             pattern.Add(@"(""[a-zA-Z0-9.]*)(::)([a-zA-Z0-9.]*"")"); //: in String
             pattern.Add(Util.Util.getNewLineInString(Sauce) + @"? *   *(\.\.\.) ?" + Util.Util.getNewLineInString(Sauce) + @" *   *([a-zA-Z0-9 .]+)"); //Line continuation
             pattern.Add(@"[^{};](" + Util.Util.getNewLineInString(Sauce) + @")"); //obvsl new line
+
             #endregion
+
             #region replacements
+
             replacements.Add(@"var $1 = $2;" + Util.Util.getNewLine());
             replacements.Add(@"var $1;" + Util.Util.getNewLine());
             replacements.Add(@"$1 = $2;" + Util.Util.getNewLine());
@@ -72,6 +71,7 @@ namespace BesiegeScriptingMod.LolCode
             replacements.Add(Util.Util.getNewLine());
             replacements.Add(@"$2");
             replacements.Add(@";" + Util.Util.getNewLine());
+
             #endregion
 
             for (int i = 0; i < pattern.Count; i++)

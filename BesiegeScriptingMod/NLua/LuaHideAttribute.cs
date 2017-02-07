@@ -23,15 +23,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
+#region usings
+
 using System;
+
+#endregion
 
 namespace NLua
 {
-	/// <summary>
-	/// Marks a method, field or property to be hidden from Lua auto-completion
-	/// </summary>
-	[AttributeUsage(AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property)]
-	public sealed class LuaHideAttribute : Attribute
-	{
-	}
+    /// <summary>
+    /// Marks a method, field or property to be hidden from Lua auto-completion
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property)]
+    public sealed class LuaHideAttribute : Attribute
+    {
+    }
 }

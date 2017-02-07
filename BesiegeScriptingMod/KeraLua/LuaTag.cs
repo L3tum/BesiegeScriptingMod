@@ -1,24 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿#region usings
+
+using System;
+
+#endregion
 
 namespace KeraLua
 {
-	public struct LuaTag
-	{
-		public LuaTag (IntPtr tag)
+    public struct LuaTag
+    {
+        public LuaTag(IntPtr tag)
+            : this()
+        {
+            Tag = tag;
+        }
 
-			: this ()
-		{
-			this.Tag = tag;
-		}
+        public static implicit operator LuaTag(IntPtr ptr)
+        {
+            return new LuaTag(ptr);
+        }
 
-		static public implicit operator LuaTag (IntPtr ptr)
-		{
-			return new LuaTag (ptr);
-		}
-		public IntPtr Tag { get; set; }
-
-	}
+        public IntPtr Tag { get; set; }
+    }
 }

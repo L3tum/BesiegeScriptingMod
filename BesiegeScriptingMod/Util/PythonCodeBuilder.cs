@@ -1,66 +1,17 @@
-﻿using System.ComponentModel;
+﻿#region usings
+
+using System.ComponentModel;
 using System.Text;
+
+#endregion
 
 namespace BesiegeScriptingMod.Util
 {
     public class PythonCodeBuilder
     {
-        private StringBuilder codeBuilder = new StringBuilder();
-
-        private string indentString = "\t";
-
-        private int indent;
+        private readonly StringBuilder codeBuilder = new StringBuilder();
 
         private bool insertedCreateComponentsContainer;
-
-        public int Indent
-        {
-            get
-            {
-                return this.indent;
-            }
-        }
-
-        public string IndentString
-        {
-            get
-            {
-                return this.indentString;
-            }
-            set
-            {
-                this.indentString = value;
-            }
-        }
-
-        public int Length
-        {
-            get
-            {
-                return this.codeBuilder.Length;
-            }
-        }
-
-        public bool PreviousLineIsCode
-        {
-            get
-            {
-                bool flag;
-                string str = this.ToString();
-                int previousLineEnd = this.MoveToPreviousLineEnd(str, str.Length - 1);
-                if (previousLineEnd <= 0)
-                {
-                    flag = false;
-                }
-                else
-                {
-                    int num = this.MoveToPreviousLineEnd(str, previousLineEnd);
-                    string str1 = str.Substring(num + 1, previousLineEnd - num).Trim();
-                    flag = (str1.Length <= 0 ? false : !str1.Trim().StartsWith("#"));
-                }
-                return flag;
-            }
-        }
 
         public PythonCodeBuilder()
         {
@@ -68,60 +19,90 @@ namespace BesiegeScriptingMod.Util
 
         public PythonCodeBuilder(int initialIndent)
         {
-            this.indent = initialIndent;
+            Indent = initialIndent;
+        }
+
+        public int Indent { get; private set; }
+
+        public string IndentString { get; set; } = "\t";
+
+        public int Length
+        {
+            get { return codeBuilder.Length; }
+        }
+
+        public bool PreviousLineIsCode
+        {
+            get
+            {
+                bool flag;
+                string str = ToString();
+                int previousLineEnd = MoveToPreviousLineEnd(str, str.Length - 1);
+                if (previousLineEnd <= 0)
+                {
+                    flag = false;
+                }
+                else
+                {
+                    int num = MoveToPreviousLineEnd(str, previousLineEnd);
+                    string str1 = str.Substring(num + 1, previousLineEnd - num).Trim();
+                    flag = str1.Length <= 0 ? false : !str1.Trim().StartsWith("#");
+                }
+                return flag;
+            }
         }
 
         public void Append(string text)
         {
-            this.codeBuilder.Append(text);
+            codeBuilder.Append(text);
         }
 
         public void AppendIndented(string text)
         {
-            this.codeBuilder.Append(this.GetIndentString());
-            this.codeBuilder.Append(text);
+            codeBuilder.Append(GetIndentString());
+            codeBuilder.Append(text);
         }
 
         public void AppendIndentedLine(string text)
         {
-            this.AppendIndented(string.Concat(text, "\r\n"));
+            AppendIndented(string.Concat(text, "\r\n"));
         }
 
         public void AppendLine()
         {
-            this.Append("\r\n");
+            Append("\r\n");
         }
 
         public void AppendLineIfPreviousLineIsCode()
         {
-            if (this.PreviousLineIsCode)
+            if (PreviousLineIsCode)
             {
-                this.codeBuilder.AppendLine();
+                codeBuilder.AppendLine();
             }
         }
 
         public void AppendToPreviousLine(string text)
         {
-            string str = this.ToString();
-            int previousLineEnd = this.MoveToPreviousLineEnd(str, str.Length - 1);
+            string str = ToString();
+            int previousLineEnd = MoveToPreviousLineEnd(str, str.Length - 1);
             if (previousLineEnd > 0)
             {
-                this.codeBuilder.Insert(previousLineEnd + 1, text);
+                codeBuilder.Insert(previousLineEnd + 1, text);
             }
         }
 
         public void DecreaseIndent()
         {
             PythonCodeBuilder pythonCodeBuilder = this;
-            pythonCodeBuilder.indent = pythonCodeBuilder.indent - 1;
+            pythonCodeBuilder.Indent = pythonCodeBuilder.Indent - 1;
         }
 
         private string GetIndentString()
         {
             StringBuilder stringBuilder = new StringBuilder();
-            for (int i = 0; i < this.indent; i++)
+            for (int i = 0; i < Indent; i++)
             {
-                stringBuilder.Append(this.indentString);
+                stringBuilder.Append(IndentString);
             }
             return stringBuilder.ToString();
         }
@@ -129,22 +110,22 @@ namespace BesiegeScriptingMod.Util
         public void IncreaseIndent()
         {
             PythonCodeBuilder pythonCodeBuilder = this;
-            pythonCodeBuilder.indent = pythonCodeBuilder.indent + 1;
+            pythonCodeBuilder.Indent = pythonCodeBuilder.Indent + 1;
         }
 
         public void InsertCreateComponentsContainer()
         {
-            if (!this.insertedCreateComponentsContainer)
+            if (!insertedCreateComponentsContainer)
             {
-                this.InsertIndentedLine(string.Concat("self._components = ", typeof(Container).FullName, "()"));
-                this.insertedCreateComponentsContainer = true;
+                InsertIndentedLine(string.Concat("self._components = ", typeof (Container).FullName, "()"));
+                insertedCreateComponentsContainer = true;
             }
         }
 
         public void InsertIndentedLine(string text)
         {
-            text = string.Concat(this.GetIndentString(), text, "\r\n");
-            this.codeBuilder.Insert(0, text, 1);
+            text = string.Concat(GetIndentString(), text, "\r\n");
+            codeBuilder.Insert(0, text, 1);
         }
 
         private int MoveToPreviousLineEnd(string code, int index)
@@ -157,7 +138,7 @@ namespace BesiegeScriptingMod.Util
                     num = -1;
                     break;
                 }
-                else if (code[index] != '\r')
+                if (code[index] != '\r')
                 {
                     index--;
                 }
@@ -172,7 +153,7 @@ namespace BesiegeScriptingMod.Util
 
         public override string ToString()
         {
-            return this.codeBuilder.ToString();
+            return codeBuilder.ToString();
         }
     }
 }

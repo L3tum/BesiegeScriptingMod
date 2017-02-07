@@ -1,5 +1,8 @@
-﻿using System;
+﻿#region usings
+
 using System.Text.RegularExpressions;
+
+#endregion
 
 namespace BesiegeScriptingMod.Chef
 {
@@ -30,16 +33,17 @@ namespace BesiegeScriptingMod.Chef
             Remember
         }
 
-        public String ingredient;
-        public int mixingbowl;
+        public string auxrecipe;
         public int bakingdish;
-        public String auxrecipe;
-        public int time; //'Refrigerate for number of hours' / 'Stir for number of minutes'
-        public String verb;
-        public Type type;
-        public int n;
 
-        public Method(String line, int n)
+        public string ingredient;
+        public int mixingbowl;
+        public int n;
+        public int time; //'Refrigerate for number of hours' / 'Stir for number of minutes'
+        public Type type;
+        public string verb;
+
+        public Method(string line, int n)
         {
             line = line.Trim();
             this.n = n;
@@ -76,14 +80,14 @@ namespace BesiegeScriptingMod.Chef
             {
                 type = matchers[1].Groups[1].Value.Equals("Put") ? Type.Put : Type.Fold;
                 ingredient = matchers[1].Groups[2].Value;
-                mixingbowl = (String.IsNullOrEmpty(matchers[1].Groups[5].Value)
+                mixingbowl = (string.IsNullOrEmpty(matchers[1].Groups[5].Value)
                     ? 1
                     : int.Parse(matchers[1].Groups[5].Value)) - 1;
             }
             else if (matchers[2].Success)
             {
                 type = Type.AddDry;
-                mixingbowl = (String.IsNullOrEmpty(matchers[2].Groups[3].Value)
+                mixingbowl = (string.IsNullOrEmpty(matchers[2].Groups[3].Value)
                     ? 1
                     : int.Parse(matchers[2].Groups[3].Value)) - 1;
             }
@@ -95,14 +99,14 @@ namespace BesiegeScriptingMod.Chef
                         ? Type.Remove
                         : (matchers[3].Groups[1].Value.Equals("Combine") ? Type.Combine : Type.Divide));
                 ingredient = matchers[3].Groups[2].Value;
-                mixingbowl = (String.IsNullOrEmpty(matchers[3].Groups[6].Value)
+                mixingbowl = (string.IsNullOrEmpty(matchers[3].Groups[6].Value)
                     ? 1
                     : int.Parse(matchers[3].Groups[6].Value)) - 1;
             }
             else if (matchers[4].Success)
             {
                 type = Type.LiquefyBowl;
-                mixingbowl = (String.IsNullOrEmpty(matchers[4].Groups[2].Value)
+                mixingbowl = (string.IsNullOrEmpty(matchers[4].Groups[2].Value)
                     ? 1
                     : int.Parse(matchers[4].Groups[2].Value)) - 1;
             }
@@ -114,7 +118,7 @@ namespace BesiegeScriptingMod.Chef
             else if (matchers[6].Success)
             {
                 type = Type.Stir;
-                mixingbowl = (String.IsNullOrEmpty(matchers[6].Groups[3].Value)
+                mixingbowl = (string.IsNullOrEmpty(matchers[6].Groups[3].Value)
                     ? 1
                     : int.Parse(matchers[6].Groups[3].Value)) - 1;
                 time = int.Parse(matchers[6].Groups[5].Value);
@@ -124,31 +128,31 @@ namespace BesiegeScriptingMod.Chef
             {
                 type = Type.StirInto;
                 ingredient = matchers[7].Groups[1].Value;
-                mixingbowl = (String.IsNullOrEmpty(matchers[7].Groups[3].Value)
+                mixingbowl = (string.IsNullOrEmpty(matchers[7].Groups[3].Value)
                     ? 1
                     : int.Parse(matchers[7].Groups[3].Value)) - 1;
             }
             else if (matchers[8].Success)
             {
                 type = Type.Mix;
-                mixingbowl = (String.IsNullOrEmpty(matchers[8].Groups[3].Value)
+                mixingbowl = (string.IsNullOrEmpty(matchers[8].Groups[3].Value)
                     ? 1
                     : int.Parse(matchers[8].Groups[3].Value)) - 1;
             }
             else if (matchers[9].Success)
             {
                 type = Type.Clean;
-                mixingbowl = (String.IsNullOrEmpty(matchers[9].Groups[2].Value)
+                mixingbowl = (string.IsNullOrEmpty(matchers[9].Groups[2].Value)
                     ? 1
                     : int.Parse(matchers[9].Groups[2].Value)) - 1;
             }
             else if (matchers[10].Success)
             {
                 type = Type.Pour;
-                mixingbowl = (String.IsNullOrEmpty(matchers[10].Groups[2].Value)
+                mixingbowl = (string.IsNullOrEmpty(matchers[10].Groups[2].Value)
                     ? 1
                     : int.Parse(matchers[10].Groups[2].Value)) - 1;
-                bakingdish = (String.IsNullOrEmpty(matchers[10].Groups[5].Value)
+                bakingdish = (string.IsNullOrEmpty(matchers[10].Groups[5].Value)
                     ? 1
                     : int.Parse(matchers[10].Groups[5].Value)) - 1;
             }
@@ -159,7 +163,7 @@ namespace BesiegeScriptingMod.Chef
             else if (matchers[12].Success)
             {
                 type = Type.Refrigerate;
-                time = String.IsNullOrEmpty(matchers[12].Groups[2].Value) ? 0 : int.Parse(matchers[12].Groups[2].Value);
+                time = string.IsNullOrEmpty(matchers[12].Groups[2].Value) ? 0 : int.Parse(matchers[12].Groups[2].Value);
             }
             else if (matchers[13].Success)
             {

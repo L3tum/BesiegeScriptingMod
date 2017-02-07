@@ -23,37 +23,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
+#region usings
+
 using System;
 #if !SILVERLIGHT && !NETFX_CORE
 using System.Runtime.Serialization;
+
 #endif
+
+#endregion
 
 namespace NLua.Exceptions
 {
-	/// <summary>
-	/// Exceptions thrown by the Lua runtime
-	/// </summary>
+    /// <summary>
+    /// Exceptions thrown by the Lua runtime
+    /// </summary>
 #if !SILVERLIGHT && !NETFX_CORE
-	[Serializable]
+    [Serializable]
 #endif
-	public class LuaException : Exception
-	{
-		public LuaException ()
-		{
-		}
+    public class LuaException : Exception
+    {
+        public LuaException()
+        {
+        }
 
-		public LuaException (string message) : base(message)
-		{
-		}
+        public LuaException(string message) : base(message)
+        {
+        }
 
-		public LuaException (string message, Exception innerException) : base(message, innerException)
-		{
-		}
+        public LuaException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
 
 #if !SILVERLIGHT && !NETFX_CORE
-		protected LuaException (SerializationInfo info, StreamingContext context) : base(info, context)
-		{
-		}
+        protected LuaException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
 #endif
-	}
+    }
 }

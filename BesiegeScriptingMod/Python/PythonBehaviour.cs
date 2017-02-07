@@ -1,28 +1,33 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Linq;
 using System.Reflection;
 using BesiegeScriptingMod.LibrariesForScripts;
 using Microsoft.Scripting;
 using Microsoft.Scripting.Hosting;
+using spaar.ModLoader;
 using UnityEngine;
+
+#endregion
 
 namespace BesiegeScriptingMod.Python
 {
-    class PythonBehaviour : MonoBehaviour
+    internal class PythonBehaviour : MonoBehaviour
     {
-        ScriptEngine engine = IronPython.Hosting.Python.CreateEngine();
-        ScriptScope scope;
-        String sauce;
-        CompiledCode code;
-        String[] refs;
+        private CompiledCode code;
+        private ScriptEngine engine = IronPython.Hosting.Python.CreateEngine();
         private object pythonClass;
+        private string[] refs;
+        private string sauce;
+        private ScriptScope scope;
 
         /// <summary>
         /// Initializes the $PythonBehaviour with the Source code and the References needed for the Script
         /// </summary>
         /// <param name="sauce">Source code</param>
         /// <param name="refs">References</param>
-        public void SourceCodening(String sauce, String[] refs)
+        public void SourceCodening(string sauce, string[] refs)
         {
             this.sauce = sauce;
             this.refs = refs;
@@ -32,7 +37,7 @@ namespace BesiegeScriptingMod.Python
         /// Starts the $PythonBehaviour
         /// </summary>
         /// <param name="classname">Name of the Script</param>
-        public bool Awakening(String classname)
+        public bool Awakening(string classname)
         {
             scope = engine.CreateScope();
             scope.SetVariable("this", this);
@@ -47,15 +52,15 @@ namespace BesiegeScriptingMod.Python
                 Besiege.SetUp();
                 scope.SetVariable("besiege", Besiege._besiege);
             }
-            spaar.ModLoader.Game.OnSimulationToggle += GameOnOnSimulationToggle;
-            spaar.ModLoader.Game.OnLevelWon += GameOnOnLevelWon;
+            Game.OnSimulationToggle += GameOnOnSimulationToggle;
+            Game.OnLevelWon += GameOnOnLevelWon;
 
-            foreach (string @ref in refs.Where(@ref => !String.IsNullOrEmpty(@ref)))
+            foreach (string @ref in refs.Where(@ref => !string.IsNullOrEmpty(@ref)))
             {
                 try
                 {
-
                     #region OBSOLETE
+
                     /*
                     Assembly assembly = Assembly.Load(@ref);
                     var namespaces = assembly.GetTypes()
@@ -82,7 +87,8 @@ namespace BesiegeScriptingMod.Python
                     lines = lines.Where(x => !string.IsNullOrEmpty(x) && !x.Equals("\r\n") && !x.Equals("\r") && !x.Equals("\n") && !String.IsNullOrEmpty(x.Trim())).ToArray();
                     sauce = String.Concat(lines);
                     */
-                    #endregion 
+
+                    #endregion
 
                     engine.Runtime.LoadAssembly(Assembly.Load(@ref));
                 }
@@ -205,7 +211,7 @@ namespace BesiegeScriptingMod.Python
                     engine.Operations.InvokeMember(pythonClass, method);
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 if (ex.GetType() != typeof (MissingMemberException))
                 {
@@ -228,9 +234,9 @@ namespace BesiegeScriptingMod.Python
                     engine.Operations.InvokeMember(pythonClass, method, arguments);
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                if (ex.GetType() != typeof(MissingMemberException))
+                if (ex.GetType() != typeof (MissingMemberException))
                 {
                     Debug.LogException(ex);
                 }
@@ -252,9 +258,9 @@ namespace BesiegeScriptingMod.Python
                     return engine.Operations.InvokeMember(pythonClass, method, arguments);
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                if (ex.GetType() != typeof(MissingMemberException))
+                if (ex.GetType() != typeof (MissingMemberException))
                 {
                     Debug.LogException(ex);
                 }

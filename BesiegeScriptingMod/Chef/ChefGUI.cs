@@ -1,12 +1,15 @@
-﻿using System;
+﻿#region usings
+
 using UnityEngine;
+
+#endregion
 
 namespace BesiegeScriptingMod.Chef
 {
-    class ChefGUI : MonoBehaviour
+    internal class ChefGUI : MonoBehaviour
     {
-        public String input = "";
-        public String label = "";
+        public string input = "";
+        public string label = "";
 
         public void OnGUI()
         {

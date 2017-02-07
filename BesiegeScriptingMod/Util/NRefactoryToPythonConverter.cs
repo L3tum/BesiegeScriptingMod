@@ -1,148 +1,154 @@
-﻿using System;
+﻿#region usings
+
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
-using BesiegeScriptingMod.Python;
 using ICSharpCode.NRefactory;
 using ICSharpCode.NRefactory.Ast;
 using ICSharpCode.NRefactory.PrettyPrinter;
 using ICSharpCode.NRefactory.Visitors;
 
+#endregion
+
 namespace BesiegeScriptingMod.Util
 {
     public class NRefactoryToPythonConverter : NodeTrackingAstVisitor, IOutputFormatter
     {
-        private string indentString = "\t";
+        private static readonly string Docstring;
 
         private PythonCodeBuilder codeBuilder;
 
         private PythonConstructorInfo constructorInfo;
 
-        private List<ParameterDeclarationExpression> methodParameters = new List<ParameterDeclarationExpression>();
-
         private MethodDeclaration currentMethod;
-
-        private List<string> propertyNames = new List<string>();
-
-        private SupportedLanguage language;
-
-        private List<MethodDeclaration> entryPointMethods;
-
-        private SpecialNodesInserter specialNodesInserter;
 
         private INode currentNode;
 
-        private List<Comment> xmlDocComments = new List<Comment>();
+        private List<MethodDeclaration> entryPointMethods;
 
-        private readonly static string Docstring;
+        private List<ParameterDeclarationExpression> methodParameters = new List<ParameterDeclarationExpression>();
 
-        public ReadOnlyCollection<MethodDeclaration> EntryPointMethods
-        {
-            get
-            {
-                return this.entryPointMethods.AsReadOnly();
-            }
-        }
+        private readonly List<string> propertyNames = new List<string>();
 
-        int ICSharpCode.NRefactory.PrettyPrinter.IOutputFormatter.IndentationLevel
-        {
-            get
-            {
-                return this.codeBuilder.Indent;
-            }
-            set
-            {
-            }
-        }
+        private SpecialNodesInserter specialNodesInserter;
 
-        bool ICSharpCode.NRefactory.PrettyPrinter.IOutputFormatter.IsInMemberBody
-        {
-            get
-            {
-                return false;
-            }
-            set
-            {
-            }
-        }
-
-        string ICSharpCode.NRefactory.PrettyPrinter.IOutputFormatter.Text
-        {
-            get
-            {
-                return string.Empty;
-            }
-        }
-
-        public string IndentString
-        {
-            get
-            {
-                return this.indentString;
-            }
-            set
-            {
-                this.indentString = value;
-            }
-        }
-
-        public SupportedLanguage SupportedLanguage
-        {
-            get
-            {
-                return this.language;
-            }
-        }
+        private readonly List<Comment> xmlDocComments = new List<Comment>();
 
         static NRefactoryToPythonConverter()
         {
-            NRefactoryToPythonConverter.Docstring = "\"\"\"";
+            Docstring = "\"\"\"";
         }
 
         public NRefactoryToPythonConverter(SupportedLanguage language)
         {
-            this.language = language;
+            SupportedLanguage = language;
         }
 
         public NRefactoryToPythonConverter()
         {
         }
 
+        public ReadOnlyCollection<MethodDeclaration> EntryPointMethods
+        {
+            get { return entryPointMethods.AsReadOnly(); }
+        }
+
+        public string IndentString { get; set; } = "\t";
+
+        public SupportedLanguage SupportedLanguage { get; }
+
+        int IOutputFormatter.IndentationLevel
+        {
+            get { return codeBuilder.Indent; }
+            set { }
+        }
+
+        bool IOutputFormatter.IsInMemberBody
+        {
+            get { return false; }
+            set { }
+        }
+
+        string IOutputFormatter.Text
+        {
+            get { return string.Empty; }
+        }
+
+        void IOutputFormatter.Indent()
+        {
+        }
+
+        void IOutputFormatter.NewLine()
+        {
+        }
+
+        void IOutputFormatter.PrintBlankLine(bool forceWriteInPreviousBlock)
+        {
+        }
+
+        void IOutputFormatter.PrintComment(Comment comment, bool forceWriteInPreviousBlock)
+        {
+            if (comment.CommentType == CommentType.SingleLine)
+            {
+                AppendSingleLineComment(comment);
+            }
+            else if (comment.CommentType == CommentType.Block)
+            {
+                AppendMultilineComment(comment);
+            }
+            else if (comment.CommentType == CommentType.Documentation)
+            {
+                if (!SupportsDocstring(currentNode))
+                {
+                    AppendSingleLineComment(comment);
+                }
+                else
+                {
+                    xmlDocComments.Add(comment);
+                }
+            }
+        }
+
+        void IOutputFormatter.PrintPreprocessingDirective(PreprocessingDirective directive, bool forceWriteInPreviousBlock)
+        {
+        }
+
         private void AddParameters(ParametrizedNode method)
         {
-            this.Append("(");
+            Append("(");
             List<ParameterDeclarationExpression> parameters = method.Parameters;
             if (parameters.Count > 0)
             {
-                if (!this.IsStatic(method))
+                if (!IsStatic(method))
                 {
-                    this.Append("self, ");
+                    Append("self, ");
                 }
                 for (int i = 0; i < parameters.Count; i++)
                 {
                     if (i > 0)
                     {
-                        this.Append(", ");
+                        Append(", ");
                     }
-                    this.Append(parameters[i].ParameterName);
+                    Append(parameters[i].ParameterName);
                 }
             }
-            else if (!this.IsStatic(method))
+            else if (!IsStatic(method))
             {
-                this.Append("self");
+                Append("self");
             }
-            this.Append("):");
+            Append("):");
         }
 
         private void Append(string code)
         {
-            this.codeBuilder.Append(code);
+            codeBuilder.Append(code);
         }
 
         private void AppendBaseTypes(List<TypeReference> baseTypes)
         {
-            this.Append("(");
+            Append("(");
             if (baseTypes.Count != 0)
             {
                 for (int i = 0; i < baseTypes.Count; i++)
@@ -150,16 +156,16 @@ namespace BesiegeScriptingMod.Util
                     TypeReference item = baseTypes[i];
                     if (i > 0)
                     {
-                        this.Append(", ");
+                        Append(", ");
                     }
-                    this.Append(this.GetTypeName(item));
+                    Append(GetTypeName(item));
                 }
             }
             else
             {
-                this.Append("object");
+                Append("object");
             }
-            this.Append("):");
+            Append("):");
         }
 
         private void AppendDocstring(List<Comment> xmlDocComments)
@@ -171,20 +177,20 @@ namespace BesiegeScriptingMod.Util
                     string commentText = xmlDocComments[i].CommentText;
                     if (i != 0)
                     {
-                        this.AppendIndented(string.Empty);
+                        AppendIndented(string.Empty);
                     }
                     else
                     {
-                        this.AppendIndented(NRefactoryToPythonConverter.Docstring);
+                        AppendIndented(Docstring);
                     }
-                    this.Append(commentText);
-                    this.AppendLine();
+                    Append(commentText);
+                    AppendLine();
                 }
-                this.AppendIndentedLine(NRefactoryToPythonConverter.Docstring);
+                AppendIndentedLine(Docstring);
             }
             else if (xmlDocComments.Count == 1)
             {
-                this.AppendIndentedLine(string.Concat(NRefactoryToPythonConverter.Docstring, xmlDocComments[0].CommentText, NRefactoryToPythonConverter.Docstring));
+                AppendIndentedLine(string.Concat(Docstring, xmlDocComments[0].CommentText, Docstring));
             }
         }
 
@@ -195,7 +201,7 @@ namespace BesiegeScriptingMod.Util
             MemberReferenceExpression memberReferenceExpression = foreachStatement.Expression as MemberReferenceExpression;
             if (expression != null)
             {
-                this.Append(expression.Identifier);
+                Append(expression.Identifier);
             }
             else if (invocationExpression != null)
             {
@@ -209,60 +215,60 @@ namespace BesiegeScriptingMod.Util
 
         private void AppendGenericTypes(ObjectCreateExpression expression)
         {
-            this.Append("[");
+            Append("[");
             List<TypeReference> genericTypes = expression.CreateType.GenericTypes;
             for (int i = 0; i < genericTypes.Count; i++)
             {
                 if (i != 0)
                 {
-                    this.Append(", ");
+                    Append(", ");
                 }
                 TypeReference item = genericTypes[i];
                 if (!item.IsArrayType)
                 {
-                    this.Append(this.GetTypeName(item));
+                    Append(GetTypeName(item));
                 }
                 else
                 {
-                    this.Append(string.Concat("Array[", this.GetTypeName(item), "]"));
+                    Append(string.Concat("Array[", GetTypeName(item), "]"));
                 }
             }
-            this.Append("]");
+            Append("]");
         }
 
         private void AppendIndented(string code)
         {
-            this.codeBuilder.AppendIndented(code);
+            codeBuilder.AppendIndented(code);
         }
 
         private void AppendIndentedLine(string code)
         {
-            this.codeBuilder.AppendIndentedLine(code);
+            codeBuilder.AppendIndentedLine(code);
         }
 
         private void AppendIndentedPassStatement()
         {
-            this.AppendIndentedLine("pass");
+            AppendIndentedLine("pass");
         }
 
         private void AppendLine()
         {
-            this.codeBuilder.AppendLine();
+            codeBuilder.AppendLine();
         }
 
         private void AppendMultilineComment(Comment comment)
         {
-            string[] strArrays = comment.CommentText.Split(new char[] { '\n' });
-            for (int i = 0; i < (int)strArrays.Length; i++)
+            string[] strArrays = comment.CommentText.Split('\n');
+            for (int i = 0; i < strArrays.Length; i++)
             {
                 string str = string.Concat("# ", strArrays[i].Trim());
-                if ((i != 0 ? true : comment.CommentStartsLine))
+                if (i != 0 ? true : comment.CommentStartsLine)
                 {
-                    this.AppendIndentedLine(str);
+                    AppendIndentedLine(str);
                 }
                 else
                 {
-                    this.codeBuilder.AppendToPreviousLine(string.Concat(" ", str));
+                    codeBuilder.AppendToPreviousLine(string.Concat(" ", str));
                 }
             }
         }
@@ -270,43 +276,43 @@ namespace BesiegeScriptingMod.Util
         private void AppendPropertyDecorator(PropertyDeclaration propertyDeclaration)
         {
             string name = propertyDeclaration.Name;
-            this.AppendIndented(name);
-            this.Append(" = property(");
+            AppendIndented(name);
+            Append(" = property(");
             bool flag = false;
             if (propertyDeclaration.HasGetRegion)
             {
-                this.Append(string.Concat("fget=get_", name));
+                Append(string.Concat("fget=get_", name));
                 flag = true;
             }
             if (propertyDeclaration.HasSetRegion)
             {
                 if (flag)
                 {
-                    this.Append(", ");
+                    Append(", ");
                 }
-                this.Append(string.Concat("fset=set_", name));
+                Append(string.Concat("fset=set_", name));
             }
-            this.Append(")");
-            this.AppendLine();
+            Append(")");
+            AppendLine();
         }
 
         private void AppendSingleLineComment(Comment comment)
         {
             if (!comment.CommentStartsLine)
             {
-                this.codeBuilder.AppendToPreviousLine(string.Concat(" #", comment.CommentText));
+                codeBuilder.AppendToPreviousLine(string.Concat(" #", comment.CommentText));
             }
             else
             {
-                this.codeBuilder.AppendIndentedLine(string.Concat("#", comment.CommentText));
+                codeBuilder.AppendIndentedLine(string.Concat("#", comment.CommentText));
             }
         }
 
         protected override void BeginVisit(INode node)
         {
-            this.xmlDocComments.Clear();
-            this.currentNode = node;
-            this.specialNodesInserter.AcceptNodeStart(node);
+            xmlDocComments.Clear();
+            currentNode = node;
+            specialNodesInserter.AcceptNodeStart(node);
         }
 
         public static bool CanConvert(string fileName)
@@ -320,40 +326,40 @@ namespace BesiegeScriptingMod.Util
             else
             {
                 extension = extension.ToLowerInvariant();
-                flag = (extension == ".cs" ? true : extension == ".vb");
+                flag = extension == ".cs" ? true : extension == ".vb";
             }
             return flag;
         }
 
         public string Convert(string source)
         {
-            return this.Convert(source, this.language);
+            return Convert(source, SupportedLanguage);
         }
 
         public string Convert(string source, SupportedLanguage language)
         {
-            CompilationUnit compilationUnit = this.GenerateCompilationUnit(source, language);
+            CompilationUnit compilationUnit = GenerateCompilationUnit(source, language);
             SpecialOutputVisitor specialOutputVisitor = new SpecialOutputVisitor(this);
-            this.specialNodesInserter = new SpecialNodesInserter(compilationUnit.UserData as List<ISpecial>, specialOutputVisitor);
-            this.entryPointMethods = new List<MethodDeclaration>();
-            this.codeBuilder = new PythonCodeBuilder()
+            specialNodesInserter = new SpecialNodesInserter(compilationUnit.UserData as List<ISpecial>, specialOutputVisitor);
+            entryPointMethods = new List<MethodDeclaration>();
+            codeBuilder = new PythonCodeBuilder
             {
-                IndentString = this.indentString
+                IndentString = IndentString
             };
             compilationUnit.AcceptVisitor(this, null);
-            return this.codeBuilder.ToString().Trim();
+            return codeBuilder.ToString().Trim();
         }
 
         public static NRefactoryToPythonConverter Create(string fileName)
         {
             NRefactoryToPythonConverter nRefactoryToPythonConverter;
-            if (!NRefactoryToPythonConverter.CanConvert(fileName))
+            if (!CanConvert(fileName))
             {
                 nRefactoryToPythonConverter = null;
             }
             else
             {
-                nRefactoryToPythonConverter = new NRefactoryToPythonConverter(NRefactoryToPythonConverter.GetSupportedLanguage(fileName));
+                nRefactoryToPythonConverter = new NRefactoryToPythonConverter(GetSupportedLanguage(fileName));
             }
             return nRefactoryToPythonConverter;
         }
@@ -362,46 +368,46 @@ namespace BesiegeScriptingMod.Util
         {
             if (constructorInfo.Constructor == null)
             {
-                this.AppendIndented("def __init__(self):");
+                AppendIndented("def __init__(self):");
             }
             else
             {
-                this.AppendIndented("def __init__");
-                this.AddParameters(constructorInfo.Constructor);
-                this.methodParameters = constructorInfo.Constructor.Parameters;
+                AppendIndented("def __init__");
+                AddParameters(constructorInfo.Constructor);
+                methodParameters = constructorInfo.Constructor.Parameters;
             }
-            this.AppendLine();
-            this.IncreaseIndent();
-            this.AppendDocstring(this.xmlDocComments);
+            AppendLine();
+            IncreaseIndent();
+            AppendDocstring(xmlDocComments);
             if (constructorInfo.Fields.Count > 0)
             {
                 foreach (FieldDeclaration field in constructorInfo.Fields)
                 {
-                    if (NRefactoryToPythonConverter.FieldHasInitialValue(field))
+                    if (FieldHasInitialValue(field))
                     {
-                        this.CreateFieldInitialization(field);
+                        CreateFieldInitialization(field);
                     }
                 }
             }
-            if (!NRefactoryToPythonConverter.IsEmptyConstructor(constructorInfo.Constructor))
+            if (!IsEmptyConstructor(constructorInfo.Constructor))
             {
                 constructorInfo.Constructor.Body.AcceptVisitor(this, null);
-                this.AppendLine();
+                AppendLine();
             }
             else if (constructorInfo.Fields.Count != 0)
             {
-                this.AppendLine();
+                AppendLine();
             }
             else
             {
-                this.AppendIndentedPassStatement();
+                AppendIndentedPassStatement();
             }
-            this.DecreaseIndent();
+            DecreaseIndent();
         }
 
         private object CreateDecrementStatement(UnaryOperatorExpression unaryOperatorExpression)
         {
-            object obj = this.CreateIncrementStatement(unaryOperatorExpression, 1, NRefactoryToPythonConverter.GetBinaryOperator(BinaryOperatorType.Subtract));
+            object obj = CreateIncrementStatement(unaryOperatorExpression, 1, GetBinaryOperator(BinaryOperatorType.Subtract));
             return obj;
         }
 
@@ -412,7 +418,7 @@ namespace BesiegeScriptingMod.Util
             MemberReferenceExpression memberReferenceExpression = eventHandlerExpression as MemberReferenceExpression;
             if (identifierExpression != null)
             {
-                this.Append(string.Concat("self.", identifierExpression.Identifier));
+                Append(string.Concat("self.", identifierExpression.Identifier));
             }
             else if (memberReferenceExpression != null)
             {
@@ -420,7 +426,7 @@ namespace BesiegeScriptingMod.Util
             }
             else if (objectCreateExpression != null)
             {
-                this.CreateDelegateCreateExpression(objectCreateExpression.Parameters[0]);
+                CreateDelegateCreateExpression(objectCreateExpression.Parameters[0]);
             }
             return null;
         }
@@ -436,44 +442,44 @@ namespace BesiegeScriptingMod.Util
             VariableDeclaration item = field.Fields[0];
             string name = item.Name;
             item.Name = string.Concat("self._", item.Name);
-            this.VisitVariableDeclaration(item, null);
+            VisitVariableDeclaration(item, null);
             item.Name = name;
         }
 
         private object CreateHandlerStatement(Expression eventExpression, string addRemoveOperator, Expression eventHandlerExpression)
         {
-            this.CreateEventReferenceExpression(eventExpression);
-            this.Append(string.Concat(" ", addRemoveOperator, " "));
-            this.CreateDelegateCreateExpression(eventHandlerExpression);
+            CreateEventReferenceExpression(eventExpression);
+            Append(string.Concat(" ", addRemoveOperator, " "));
+            CreateDelegateCreateExpression(eventHandlerExpression);
             return null;
         }
 
         private object CreateIncrementStatement(UnaryOperatorExpression unaryOperatorExpression)
         {
-            object obj = this.CreateIncrementStatement(unaryOperatorExpression, 1, NRefactoryToPythonConverter.GetBinaryOperator(BinaryOperatorType.Add));
+            object obj = CreateIncrementStatement(unaryOperatorExpression, 1, GetBinaryOperator(BinaryOperatorType.Add));
             return obj;
         }
 
         private object CreateIncrementStatement(UnaryOperatorExpression unaryOperatorExpression, int increment, string binaryOperator)
         {
             unaryOperatorExpression.Expression.AcceptVisitor(this, null);
-            this.Append(string.Concat(" ", binaryOperator, "= "));
-            this.Append(increment.ToString());
+            Append(string.Concat(" ", binaryOperator, "= "));
+            Append(increment.ToString());
             return null;
         }
 
         private object CreateInitStatement(ForeachStatement foreachStatement)
         {
-            this.Append("enumerator = ");
-            this.AppendForeachVariableName(foreachStatement);
-            this.Append(".GetEnumerator()");
+            Append("enumerator = ");
+            AppendForeachVariableName(foreachStatement);
+            Append(".GetEnumerator()");
             return null;
         }
 
         private object CreateSimpleAssignment(AssignmentExpression assignmentExpression, string op, object data)
         {
             assignmentExpression.Left.AcceptVisitor(this, data);
-            this.Append(string.Concat(" ", op, " "));
+            Append(string.Concat(" ", op, " "));
             assignmentExpression.Right.AcceptVisitor(this, data);
             return null;
         }
@@ -491,7 +497,7 @@ namespace BesiegeScriptingMod.Util
             }
             if (num == 0)
             {
-                this.AppendIndentedLine("pass");
+                AppendIndentedLine("pass");
             }
         }
 
@@ -502,46 +508,46 @@ namespace BesiegeScriptingMod.Util
             {
                 if (!flag)
                 {
-                    this.CreateSwitchCaseCondition(" or ", switchExpression, switchLabel);
+                    CreateSwitchCaseCondition(" or ", switchExpression, switchLabel);
                 }
                 else if (switchLabel.IsDefault)
                 {
-                    this.AppendIndented("else");
+                    AppendIndented("else");
                 }
                 else if (!firstSection)
                 {
-                    this.AppendIndented(string.Empty);
-                    this.CreateSwitchCaseCondition("elif ", switchExpression, switchLabel);
+                    AppendIndented(string.Empty);
+                    CreateSwitchCaseCondition("elif ", switchExpression, switchLabel);
                 }
                 else
                 {
-                    this.AppendIndented(string.Empty);
-                    this.CreateSwitchCaseCondition("if ", switchExpression, switchLabel);
+                    AppendIndented(string.Empty);
+                    CreateSwitchCaseCondition("if ", switchExpression, switchLabel);
                 }
                 flag = false;
             }
-            this.Append(":");
-            this.AppendLine();
+            Append(":");
+            AppendLine();
         }
 
         private void CreateSwitchCaseCondition(string prefix, Expression switchExpression, CaseLabel label)
         {
-            this.Append(prefix);
+            Append(prefix);
             switchExpression.AcceptVisitor(this, null);
-            this.Append(" == ");
+            Append(" == ");
             label.Label.AcceptVisitor(this, null);
         }
 
         private object CreateUnaryOperatorStatement(string op, Expression expression)
         {
-            this.Append(op);
+            Append(op);
             expression.AcceptVisitor(this, null);
             return null;
         }
 
         private void DecreaseIndent()
         {
-            this.codeBuilder.DecreaseIndent();
+            codeBuilder.DecreaseIndent();
         }
 
         private static bool FieldHasInitialValue(FieldDeclaration fieldDeclaration)
@@ -572,7 +578,7 @@ namespace BesiegeScriptingMod.Util
         public string GenerateMainMethodCall(MethodDeclaration methodDeclaration)
         {
             StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append(NRefactoryToPythonConverter.GetTypeName(methodDeclaration));
+            stringBuilder.Append(GetTypeName(methodDeclaration));
             stringBuilder.Append('.');
             stringBuilder.Append(methodDeclaration.Name);
             stringBuilder.Append('(');
@@ -590,111 +596,111 @@ namespace BesiegeScriptingMod.Util
             switch (binaryOperatorType)
             {
                 case BinaryOperatorType.BitwiseAnd:
-                    {
-                        str = "&";
-                        break;
-                    }
+                {
+                    str = "&";
+                    break;
+                }
                 case BinaryOperatorType.BitwiseOr:
-                    {
-                        str = "|";
-                        break;
-                    }
+                {
+                    str = "|";
+                    break;
+                }
                 case BinaryOperatorType.LogicalAnd:
-                    {
-                        str = "and";
-                        break;
-                    }
+                {
+                    str = "and";
+                    break;
+                }
                 case BinaryOperatorType.LogicalOr:
-                    {
-                        str = "or";
-                        break;
-                    }
+                {
+                    str = "or";
+                    break;
+                }
                 case BinaryOperatorType.ExclusiveOr:
-                    {
-                        str = "^";
-                        break;
-                    }
+                {
+                    str = "^";
+                    break;
+                }
                 case BinaryOperatorType.GreaterThan:
-                    {
-                        str = ">";
-                        break;
-                    }
+                {
+                    str = ">";
+                    break;
+                }
                 case BinaryOperatorType.GreaterThanOrEqual:
-                    {
-                        str = ">=";
-                        break;
-                    }
+                {
+                    str = ">=";
+                    break;
+                }
                 case BinaryOperatorType.Equality:
                 case BinaryOperatorType.Power:
-                    {
-                        str = "==";
-                        break;
-                    }
+                {
+                    str = "==";
+                    break;
+                }
                 case BinaryOperatorType.InEquality:
-                    {
-                        str = "!=";
-                        break;
-                    }
+                {
+                    str = "!=";
+                    break;
+                }
                 case BinaryOperatorType.LessThan:
-                    {
-                        str = "<";
-                        break;
-                    }
+                {
+                    str = "<";
+                    break;
+                }
                 case BinaryOperatorType.LessThanOrEqual:
-                    {
-                        str = "<=";
-                        break;
-                    }
+                {
+                    str = "<=";
+                    break;
+                }
                 case BinaryOperatorType.Add:
-                    {
-                        str = "+";
-                        break;
-                    }
+                {
+                    str = "+";
+                    break;
+                }
                 case BinaryOperatorType.Subtract:
-                    {
-                        str = "-";
-                        break;
-                    }
+                {
+                    str = "-";
+                    break;
+                }
                 case BinaryOperatorType.Multiply:
-                    {
-                        str = "*";
-                        break;
-                    }
+                {
+                    str = "*";
+                    break;
+                }
                 case BinaryOperatorType.Divide:
                 case BinaryOperatorType.DivideInteger:
-                    {
-                        str = "/";
-                        break;
-                    }
+                {
+                    str = "/";
+                    break;
+                }
                 case BinaryOperatorType.Modulus:
-                    {
-                        str = "%";
-                        break;
-                    }
+                {
+                    str = "%";
+                    break;
+                }
                 case BinaryOperatorType.Concat:
-                    {
-                        str = "+";
-                        break;
-                    }
+                {
+                    str = "+";
+                    break;
+                }
                 case BinaryOperatorType.ShiftLeft:
-                    {
-                        str = "<<";
-                        break;
-                    }
+                {
+                    str = "<<";
+                    break;
+                }
                 case BinaryOperatorType.ShiftRight:
-                    {
-                        str = ">>";
-                        break;
-                    }
+                {
+                    str = ">>";
+                    break;
+                }
                 case BinaryOperatorType.ReferenceEquality:
-                    {
-                        str = "is";
-                        break;
-                    }
+                {
+                    str = "is";
+                    break;
+                }
                 default:
-                    {
-                        goto case BinaryOperatorType.Power;
-                    }
+                {
+                    goto case BinaryOperatorType.Power;
+                }
             }
             return str;
         }
@@ -702,7 +708,7 @@ namespace BesiegeScriptingMod.Util
         private static SupportedLanguage GetSupportedLanguage(string fileName)
         {
             SupportedLanguage supportedLanguage;
-            supportedLanguage = (!(Path.GetExtension(fileName.ToLowerInvariant()) == ".vb") ? SupportedLanguage.CSharp : SupportedLanguage.VBNet);
+            supportedLanguage = !(Path.GetExtension(fileName.ToLowerInvariant()) == ".vb") ? SupportedLanguage.CSharp : SupportedLanguage.VBNet;
             return supportedLanguage;
         }
 
@@ -710,11 +716,11 @@ namespace BesiegeScriptingMod.Util
         {
             string str;
             string type = typeRef.Type;
-            if (type == typeof(string).FullName)
+            if (type == typeof (string).FullName)
             {
                 str = "str";
             }
-            else if ((type == typeof(int).FullName ? false : !(type == typeof(int).Name)))
+            else if (type == typeof (int).FullName ? false : !(type == typeof (int).Name))
             {
                 if (typeRef.IsKeyword)
                 {
@@ -739,70 +745,31 @@ namespace BesiegeScriptingMod.Util
             return (methodDeclaration.Parent as TypeDeclaration).Name;
         }
 
-        void ICSharpCode.NRefactory.PrettyPrinter.IOutputFormatter.Indent()
-        {
-        }
-
-        void ICSharpCode.NRefactory.PrettyPrinter.IOutputFormatter.NewLine()
-        {
-        }
-
-        void ICSharpCode.NRefactory.PrettyPrinter.IOutputFormatter.PrintBlankLine(bool forceWriteInPreviousBlock)
-        {
-        }
-
-        void ICSharpCode.NRefactory.PrettyPrinter.IOutputFormatter.PrintComment(Comment comment, bool forceWriteInPreviousBlock)
-        {
-            if (comment.CommentType == CommentType.SingleLine)
-            {
-                this.AppendSingleLineComment(comment);
-            }
-            else if (comment.CommentType == CommentType.Block)
-            {
-                this.AppendMultilineComment(comment);
-            }
-            else if (comment.CommentType == CommentType.Documentation)
-            {
-                if (!this.SupportsDocstring(this.currentNode))
-                {
-                    this.AppendSingleLineComment(comment);
-                }
-                else
-                {
-                    this.xmlDocComments.Add(comment);
-                }
-            }
-        }
-
-        void ICSharpCode.NRefactory.PrettyPrinter.IOutputFormatter.PrintPreprocessingDirective(PreprocessingDirective directive, bool forceWriteInPreviousBlock)
-        {
-        }
-
         private void IncreaseIndent()
         {
-            this.codeBuilder.IncreaseIndent();
+            codeBuilder.IncreaseIndent();
         }
 
         private static bool IsAddEventHandler(AssignmentExpression assignmentExpression)
         {
-            return (assignmentExpression.Op != AssignmentOperatorType.Add ? false : assignmentExpression.Left is MemberReferenceExpression);
+            return assignmentExpression.Op != AssignmentOperatorType.Add ? false : assignmentExpression.Left is MemberReferenceExpression;
         }
 
         private static bool IsEmptyConstructor(ConstructorDeclaration constructor)
         {
             bool flag;
-            flag = (constructor == null ? true : constructor.Body.Children.Count == 0);
+            flag = constructor == null ? true : constructor.Body.Children.Count == 0;
             return flag;
         }
 
         private bool IsField(string name)
         {
             bool flag;
-            if (!this.IsMethodParameter(name))
+            if (!IsMethodParameter(name))
             {
-                if (this.constructorInfo != null)
+                if (constructorInfo != null)
                 {
-                    foreach (FieldDeclaration field in this.constructorInfo.Fields)
+                    foreach (FieldDeclaration field in constructorInfo.Fields)
                     {
                         if (field.Fields[0].Name == name)
                         {
@@ -828,7 +795,7 @@ namespace BesiegeScriptingMod.Util
         private bool IsMethodParameter(string name)
         {
             bool flag;
-            foreach (ParameterDeclarationExpression methodParameter in this.methodParameters)
+            foreach (ParameterDeclarationExpression methodParameter in methodParameters)
             {
                 if (methodParameter.ParameterName == name)
                 {
@@ -842,12 +809,12 @@ namespace BesiegeScriptingMod.Util
 
         private bool IsProperty(string name)
         {
-            return this.propertyNames.Contains(name);
+            return propertyNames.Contains(name);
         }
 
         private static bool IsRemoveEventHandler(AssignmentExpression assignmentExpression)
         {
-            return (assignmentExpression.Op != AssignmentOperatorType.Subtract ? false : assignmentExpression.Left is MemberReferenceExpression);
+            return assignmentExpression.Op != AssignmentOperatorType.Subtract ? false : assignmentExpression.Left is MemberReferenceExpression;
         }
 
         private bool IsStatic(ParametrizedNode method)
@@ -859,13 +826,13 @@ namespace BesiegeScriptingMod.Util
         {
             if (method.Name == "Main")
             {
-                this.entryPointMethods.Add(method);
+                entryPointMethods.Add(method);
             }
         }
 
         private bool SupportsDocstring(INode node)
         {
-            return (node is TypeDeclaration || node is MethodDeclaration ? true : node is ConstructorDeclaration);
+            return node is TypeDeclaration || node is MethodDeclaration ? true : node is ConstructorDeclaration;
         }
 
         public override object TrackedVisitAddHandlerStatement(AddHandlerStatement addHandlerStatement, object data)
@@ -888,17 +855,17 @@ namespace BesiegeScriptingMod.Util
 
         public override object TrackedVisitArrayCreateExpression(ArrayCreateExpression arrayCreateExpression, object data)
         {
-            string typeName = this.GetTypeName(arrayCreateExpression.CreateType);
+            string typeName = GetTypeName(arrayCreateExpression.CreateType);
             if (arrayCreateExpression.ArrayInitializer.CreateExpressions.Count != 0)
             {
-                this.Append(string.Concat("Array[", typeName, "]"));
-                this.Append("((");
+                Append(string.Concat("Array[", typeName, "]"));
+                Append("((");
                 bool flag = true;
                 foreach (Expression createExpression in arrayCreateExpression.ArrayInitializer.CreateExpressions)
                 {
                     if (!flag)
                     {
-                        this.Append(", ");
+                        Append(", ");
                     }
                     else
                     {
@@ -906,23 +873,23 @@ namespace BesiegeScriptingMod.Util
                     }
                     createExpression.AcceptVisitor(this, data);
                 }
-                this.Append("))");
+                Append("))");
             }
             else
             {
-                this.Append(string.Concat("Array.CreateInstance(", typeName));
+                Append(string.Concat("Array.CreateInstance(", typeName));
                 if (arrayCreateExpression.Arguments.Count <= 0)
                 {
-                    this.Append(", 0)");
+                    Append(", 0)");
                 }
                 else
                 {
                     foreach (Expression argument in arrayCreateExpression.Arguments)
                     {
-                        this.Append(", ");
+                        Append(", ");
                         argument.AcceptVisitor(this, data);
                     }
-                    this.Append(")");
+                    Append(")");
                 }
             }
             return null;
@@ -934,92 +901,86 @@ namespace BesiegeScriptingMod.Util
             switch (assignmentExpression.Op)
             {
                 case AssignmentOperatorType.Assign:
-                    {
-                        obj = this.CreateSimpleAssignment(assignmentExpression, "=", data);
-                        break;
-                    }
+                {
+                    obj = CreateSimpleAssignment(assignmentExpression, "=", data);
+                    break;
+                }
                 case AssignmentOperatorType.Add:
+                {
+                    if (!IsAddEventHandler(assignmentExpression))
                     {
-                        if (!NRefactoryToPythonConverter.IsAddEventHandler(assignmentExpression))
-                        {
-                            obj = this.CreateSimpleAssignment(assignmentExpression, "+=", data);
-                            break;
-                        }
-                        else
-                        {
-                            obj = this.CreateHandlerStatement(assignmentExpression.Left, "+=", assignmentExpression.Right);
-                            break;
-                        }
-                    }
-                case AssignmentOperatorType.Subtract:
-                    {
-                        if (!NRefactoryToPythonConverter.IsRemoveEventHandler(assignmentExpression))
-                        {
-                            obj = this.CreateSimpleAssignment(assignmentExpression, "-=", data);
-                            break;
-                        }
-                        else
-                        {
-                            obj = this.CreateHandlerStatement(assignmentExpression.Left, "-=", assignmentExpression.Right);
-                            break;
-                        }
-                    }
-                case AssignmentOperatorType.Multiply:
-                    {
-                        obj = this.CreateSimpleAssignment(assignmentExpression, "*=", data);
+                        obj = CreateSimpleAssignment(assignmentExpression, "+=", data);
                         break;
                     }
+                    obj = CreateHandlerStatement(assignmentExpression.Left, "+=", assignmentExpression.Right);
+                    break;
+                }
+                case AssignmentOperatorType.Subtract:
+                {
+                    if (!IsRemoveEventHandler(assignmentExpression))
+                    {
+                        obj = CreateSimpleAssignment(assignmentExpression, "-=", data);
+                        break;
+                    }
+                    obj = CreateHandlerStatement(assignmentExpression.Left, "-=", assignmentExpression.Right);
+                    break;
+                }
+                case AssignmentOperatorType.Multiply:
+                {
+                    obj = CreateSimpleAssignment(assignmentExpression, "*=", data);
+                    break;
+                }
                 case AssignmentOperatorType.Divide:
                 case AssignmentOperatorType.DivideInteger:
-                    {
-                        obj = this.CreateSimpleAssignment(assignmentExpression, "/=", data);
-                        break;
-                    }
+                {
+                    obj = CreateSimpleAssignment(assignmentExpression, "/=", data);
+                    break;
+                }
                 case AssignmentOperatorType.Modulus:
-                    {
-                        obj = this.CreateSimpleAssignment(assignmentExpression, "%=", data);
-                        break;
-                    }
+                {
+                    obj = CreateSimpleAssignment(assignmentExpression, "%=", data);
+                    break;
+                }
                 case AssignmentOperatorType.Power:
-                    {
-                        obj = this.CreateSimpleAssignment(assignmentExpression, "**=", data);
-                        break;
-                    }
+                {
+                    obj = CreateSimpleAssignment(assignmentExpression, "**=", data);
+                    break;
+                }
                 case AssignmentOperatorType.ConcatString:
-                    {
-                        obj = this.CreateSimpleAssignment(assignmentExpression, "+=", data);
-                        break;
-                    }
+                {
+                    obj = CreateSimpleAssignment(assignmentExpression, "+=", data);
+                    break;
+                }
                 case AssignmentOperatorType.ShiftLeft:
-                    {
-                        obj = this.CreateSimpleAssignment(assignmentExpression, "<<=", data);
-                        break;
-                    }
+                {
+                    obj = CreateSimpleAssignment(assignmentExpression, "<<=", data);
+                    break;
+                }
                 case AssignmentOperatorType.ShiftRight:
-                    {
-                        obj = this.CreateSimpleAssignment(assignmentExpression, ">>=", data);
-                        break;
-                    }
+                {
+                    obj = CreateSimpleAssignment(assignmentExpression, ">>=", data);
+                    break;
+                }
                 case AssignmentOperatorType.BitwiseAnd:
-                    {
-                        obj = this.CreateSimpleAssignment(assignmentExpression, "&=", data);
-                        break;
-                    }
+                {
+                    obj = CreateSimpleAssignment(assignmentExpression, "&=", data);
+                    break;
+                }
                 case AssignmentOperatorType.BitwiseOr:
-                    {
-                        obj = this.CreateSimpleAssignment(assignmentExpression, "|=", data);
-                        break;
-                    }
+                {
+                    obj = CreateSimpleAssignment(assignmentExpression, "|=", data);
+                    break;
+                }
                 case AssignmentOperatorType.ExclusiveOr:
-                    {
-                        obj = this.CreateSimpleAssignment(assignmentExpression, "^=", data);
-                        break;
-                    }
+                {
+                    obj = CreateSimpleAssignment(assignmentExpression, "^=", data);
+                    break;
+                }
                 default:
-                    {
-                        obj = null;
-                        break;
-                    }
+                {
+                    obj = null;
+                    break;
+                }
             }
             return obj;
         }
@@ -1031,16 +992,16 @@ namespace BesiegeScriptingMod.Util
 
         public override object TrackedVisitBaseReferenceExpression(BaseReferenceExpression baseReferenceExpression, object data)
         {
-            this.Append("self");
+            Append("self");
             return null;
         }
 
         public override object TrackedVisitBinaryOperatorExpression(BinaryOperatorExpression binaryOperatorExpression, object data)
         {
             binaryOperatorExpression.Left.AcceptVisitor(this, data);
-            this.Append(" ");
-            this.Append(NRefactoryToPythonConverter.GetBinaryOperator(binaryOperatorExpression.Op));
-            this.Append(" ");
+            Append(" ");
+            Append(GetBinaryOperator(binaryOperatorExpression.Op));
+            Append(" ");
             binaryOperatorExpression.Right.AcceptVisitor(this, data);
             return null;
         }
@@ -1052,7 +1013,7 @@ namespace BesiegeScriptingMod.Util
 
         public override object TrackedVisitBreakStatement(BreakStatement breakStatement, object data)
         {
-            this.AppendIndentedLine("break");
+            AppendIndentedLine("break");
             return null;
         }
 
@@ -1104,16 +1065,16 @@ namespace BesiegeScriptingMod.Util
         public override object TrackedVisitConditionalExpression(ConditionalExpression conditionalExpression, object data)
         {
             conditionalExpression.TrueExpression.AcceptVisitor(this, data);
-            this.Append(" if ");
+            Append(" if ");
             conditionalExpression.Condition.AcceptVisitor(this, data);
-            this.Append(" else ");
+            Append(" else ");
             conditionalExpression.FalseExpression.AcceptVisitor(this, data);
             return null;
         }
 
         public override object TrackedVisitConstructorDeclaration(ConstructorDeclaration constructorDeclaration, object data)
         {
-            this.CreateConstructor(this.constructorInfo);
+            CreateConstructor(constructorInfo);
             return null;
         }
 
@@ -1125,7 +1086,7 @@ namespace BesiegeScriptingMod.Util
 
         public override object TrackedVisitContinueStatement(ContinueStatement continueStatement, object data)
         {
-            this.AppendIndentedLine("continue");
+            AppendIndentedLine("continue");
             return null;
         }
 
@@ -1149,10 +1110,10 @@ namespace BesiegeScriptingMod.Util
 
         public override object TrackedVisitDestructorDeclaration(DestructorDeclaration destructorDeclaration, object data)
         {
-            this.AppendIndentedLine("def __del__(self):");
-            this.IncreaseIndent();
+            AppendIndentedLine("def __del__(self):");
+            IncreaseIndent();
             destructorDeclaration.Body.AcceptVisitor(this, data);
-            this.DecreaseIndent();
+            DecreaseIndent();
             return null;
         }
 
@@ -1164,25 +1125,25 @@ namespace BesiegeScriptingMod.Util
 
         public override object TrackedVisitDoLoopStatement(DoLoopStatement doLoopStatement, object data)
         {
-            this.AppendIndented("while ");
+            AppendIndented("while ");
             doLoopStatement.Condition.AcceptVisitor(this, data);
-            this.Append(":");
-            this.AppendLine();
-            this.IncreaseIndent();
+            Append(":");
+            AppendLine();
+            IncreaseIndent();
             doLoopStatement.EmbeddedStatement.AcceptVisitor(this, data);
-            this.DecreaseIndent();
+            DecreaseIndent();
             return null;
         }
 
         public override object TrackedVisitElseIfSection(ElseIfSection elseIfSection, object data)
         {
-            this.AppendIndented("elif ");
+            AppendIndented("elif ");
             elseIfSection.Condition.AcceptVisitor(this, data);
-            this.Append(":");
-            this.AppendLine();
-            this.IncreaseIndent();
+            Append(":");
+            AppendLine();
+            IncreaseIndent();
             elseIfSection.EmbeddedStatement.AcceptVisitor(this, data);
-            this.DecreaseIndent();
+            DecreaseIndent();
             return null;
         }
 
@@ -1247,9 +1208,9 @@ namespace BesiegeScriptingMod.Util
 
         public override object TrackedVisitExpressionStatement(ExpressionStatement expressionStatement, object data)
         {
-            this.AppendIndented(string.Empty);
+            AppendIndented(string.Empty);
             expressionStatement.Expression.AcceptVisitor(this, data);
-            this.AppendLine();
+            AppendLine();
             return null;
         }
 
@@ -1272,14 +1233,14 @@ namespace BesiegeScriptingMod.Util
 
         public override object TrackedVisitForeachStatement(ForeachStatement foreachStatement, object data)
         {
-            this.AppendIndented(string.Empty);
-            this.CreateInitStatement(foreachStatement);
-            this.AppendLine();
-            this.AppendIndentedLine("while enumerator.MoveNext():");
-            this.IncreaseIndent();
-            this.AppendIndentedLine(string.Concat(foreachStatement.VariableName, " = enumerator.Current"));
+            AppendIndented(string.Empty);
+            CreateInitStatement(foreachStatement);
+            AppendLine();
+            AppendIndentedLine("while enumerator.MoveNext():");
+            IncreaseIndent();
+            AppendIndentedLine(string.Concat(foreachStatement.VariableName, " = enumerator.Current"));
             foreachStatement.EmbeddedStatement.AcceptVisitor(this, data);
-            this.DecreaseIndent();
+            DecreaseIndent();
             return null;
         }
 
@@ -1295,17 +1256,17 @@ namespace BesiegeScriptingMod.Util
             {
                 initializer.AcceptVisitor(this, data);
             }
-            this.AppendIndented("while ");
+            AppendIndented("while ");
             forStatement.Condition.AcceptVisitor(this, data);
-            this.Append(":");
-            this.AppendLine();
-            this.IncreaseIndent();
+            Append(":");
+            AppendLine();
+            IncreaseIndent();
             forStatement.EmbeddedStatement.AcceptVisitor(this, data);
             foreach (Statement iterator in forStatement.Iterator)
             {
                 iterator.AcceptVisitor(this, data);
             }
-            this.DecreaseIndent();
+            DecreaseIndent();
             return null;
         }
 
@@ -1324,33 +1285,33 @@ namespace BesiegeScriptingMod.Util
         public override object TrackedVisitIdentifierExpression(IdentifierExpression identifierExpression, object data)
         {
             string identifier = identifierExpression.Identifier;
-            if (this.IsField(identifier))
+            if (IsField(identifier))
             {
-                this.Append(string.Concat("self._", identifier));
+                Append(string.Concat("self._", identifier));
             }
-            else if ((!IsProperty(identifier) || this.IsMethodParameter(identifier)))
+            else if (!IsProperty(identifier) || IsMethodParameter(identifier))
             {
-                this.Append(identifier);
+                Append(identifier);
             }
             else
             {
-                this.Append(string.Concat("self.", identifier));
+                Append(string.Concat("self.", identifier));
             }
             return null;
         }
 
         public override object TrackedVisitIfElseStatement(IfElseStatement ifElseStatement, object data)
         {
-            this.AppendIndented("if ");
+            AppendIndented("if ");
             ifElseStatement.Condition.AcceptVisitor(this, data);
-            this.Append(":");
-            this.AppendLine();
-            this.IncreaseIndent();
+            Append(":");
+            AppendLine();
+            IncreaseIndent();
             foreach (Statement trueStatement in ifElseStatement.TrueStatement)
             {
                 trueStatement.AcceptVisitor(this, data);
             }
-            this.DecreaseIndent();
+            DecreaseIndent();
             if (ifElseStatement.HasElseIfSections)
             {
                 foreach (ElseIfSection elseIfSection in ifElseStatement.ElseIfSections)
@@ -1360,13 +1321,13 @@ namespace BesiegeScriptingMod.Util
             }
             if (ifElseStatement.HasElseStatements)
             {
-                this.AppendIndentedLine("else:");
-                this.IncreaseIndent();
+                AppendIndentedLine("else:");
+                IncreaseIndent();
                 foreach (Statement falseStatement in ifElseStatement.FalseStatement)
                 {
                     falseStatement.AcceptVisitor(this, data);
                 }
-                this.DecreaseIndent();
+                DecreaseIndent();
             }
             return null;
         }
@@ -1382,9 +1343,9 @@ namespace BesiegeScriptingMod.Util
             indexerExpression.TargetObject.AcceptVisitor(this, data);
             foreach (Expression index in indexerExpression.Indexes)
             {
-                this.Append("[");
+                Append("[");
                 index.AcceptVisitor(this, data);
-                this.Append("]");
+                Append("]");
             }
             return null;
         }
@@ -1408,27 +1369,27 @@ namespace BesiegeScriptingMod.Util
             if (targetObject != null)
             {
                 targetObject.TargetObject.AcceptVisitor(this, data);
-                this.Append(string.Concat(".", targetObject.MemberName));
+                Append(string.Concat(".", targetObject.MemberName));
             }
             else if (identifierExpression != null)
             {
-                if ((this.currentMethod == null ? true : !this.IsStatic(this.currentMethod)))
+                if (currentMethod == null ? true : !IsStatic(currentMethod))
                 {
-                    this.Append("self.");
+                    Append("self.");
                 }
                 else
                 {
-                    this.Append(string.Concat(NRefactoryToPythonConverter.GetTypeName(this.currentMethod), "."));
+                    Append(string.Concat(GetTypeName(currentMethod), "."));
                 }
-                this.Append(identifierExpression.Identifier);
+                Append(identifierExpression.Identifier);
             }
-            this.Append("(");
+            Append("(");
             bool flag = true;
             foreach (Expression argument in invocationExpression.Arguments)
             {
                 if (!flag)
                 {
-                    this.Append(", ");
+                    Append(", ");
                 }
                 else
                 {
@@ -1436,7 +1397,7 @@ namespace BesiegeScriptingMod.Util
                 }
                 argument.AcceptVisitor(this, data);
             }
-            this.Append(")");
+            Append(")");
             return null;
         }
 
@@ -1456,9 +1417,9 @@ namespace BesiegeScriptingMod.Util
             VariableDeclaration item = localVariableDeclaration.Variables[0];
             if (!item.Initializer.IsNull)
             {
-                this.AppendIndented(string.Concat(item.Name, " = "));
+                AppendIndented(string.Concat(item.Name, " = "));
                 item.Initializer.AcceptVisitor(this, data);
-                this.AppendLine();
+                AppendLine();
             }
             return null;
         }
@@ -1472,51 +1433,51 @@ namespace BesiegeScriptingMod.Util
         public override object TrackedVisitMemberReferenceExpression(MemberReferenceExpression memberReferenceExpression, object data)
         {
             memberReferenceExpression.TargetObject.AcceptVisitor(this, data);
-            if ((!(memberReferenceExpression.TargetObject is ThisReferenceExpression) ? true : this.IsProperty(memberReferenceExpression.MemberName)))
+            if (!(memberReferenceExpression.TargetObject is ThisReferenceExpression) ? true : IsProperty(memberReferenceExpression.MemberName))
             {
-                this.Append(".");
+                Append(".");
             }
             else
             {
-                this.Append("._");
+                Append("._");
             }
-            this.Append(memberReferenceExpression.MemberName);
+            Append(memberReferenceExpression.MemberName);
             return null;
         }
 
         public override object TrackedVisitMethodDeclaration(MethodDeclaration methodDeclaration, object data)
         {
-            this.currentMethod = methodDeclaration;
-            this.AppendIndented(string.Concat("def ", methodDeclaration.Name));
-            this.AddParameters(methodDeclaration);
-            this.methodParameters = methodDeclaration.Parameters;
-            this.AppendLine();
-            this.IncreaseIndent();
-            this.AppendDocstring(this.xmlDocComments);
+            currentMethod = methodDeclaration;
+            AppendIndented(string.Concat("def ", methodDeclaration.Name));
+            AddParameters(methodDeclaration);
+            methodParameters = methodDeclaration.Parameters;
+            AppendLine();
+            IncreaseIndent();
+            AppendDocstring(xmlDocComments);
             if (methodDeclaration.Body.Children.Count <= 0)
             {
-                this.AppendIndentedPassStatement();
+                AppendIndentedPassStatement();
             }
             else
             {
                 methodDeclaration.Body.AcceptVisitor(this, data);
             }
-            this.DecreaseIndent();
-            this.AppendLine();
-            if (this.IsStatic(methodDeclaration))
+            DecreaseIndent();
+            AppendLine();
+            if (IsStatic(methodDeclaration))
             {
-                this.AppendIndentedLine(string.Concat(methodDeclaration.Name, " = staticmethod(", methodDeclaration.Name, ")"));
-                this.AppendLine();
-                this.SaveMethodIfMainEntryPoint(methodDeclaration);
+                AppendIndentedLine(string.Concat(methodDeclaration.Name, " = staticmethod(", methodDeclaration.Name, ")"));
+                AppendLine();
+                SaveMethodIfMainEntryPoint(methodDeclaration);
             }
-            this.currentMethod = null;
+            currentMethod = null;
             return null;
         }
 
         public override object TrackedVisitNamedArgumentExpression(NamedArgumentExpression namedArgumentExpression, object data)
         {
-            this.Append(namedArgumentExpression.Name);
-            this.Append(" = ");
+            Append(namedArgumentExpression.Name);
+            Append(" = ");
             namedArgumentExpression.Expression.AcceptVisitor(this, data);
             return null;
         }
@@ -1528,18 +1489,18 @@ namespace BesiegeScriptingMod.Util
 
         public override object TrackedVisitObjectCreateExpression(ObjectCreateExpression objectCreateExpression, object data)
         {
-            this.Append(objectCreateExpression.CreateType.Type);
-            if (NRefactoryToPythonConverter.IsGenericType(objectCreateExpression))
+            Append(objectCreateExpression.CreateType.Type);
+            if (IsGenericType(objectCreateExpression))
             {
-                this.AppendGenericTypes(objectCreateExpression);
+                AppendGenericTypes(objectCreateExpression);
             }
-            this.Append("(");
+            Append("(");
             bool flag = true;
             foreach (Expression parameter in objectCreateExpression.Parameters)
             {
                 if (!flag)
                 {
-                    this.Append(", ");
+                    Append(", ");
                 }
                 parameter.AcceptVisitor(this, data);
                 flag = false;
@@ -1549,12 +1510,12 @@ namespace BesiegeScriptingMod.Util
             {
                 if (!flag1)
                 {
-                    this.Append(", ");
+                    Append(", ");
                 }
                 createExpression.AcceptVisitor(this, data);
                 flag1 = false;
             }
-            this.Append(")");
+            Append(")");
             return null;
         }
 
@@ -1583,9 +1544,9 @@ namespace BesiegeScriptingMod.Util
 
         public override object TrackedVisitParenthesizedExpression(ParenthesizedExpression parenthesizedExpression, object data)
         {
-            this.Append("(");
+            Append("(");
             parenthesizedExpression.Expression.AcceptVisitor(this, data);
-            this.Append(")");
+            Append(")");
             return null;
         }
 
@@ -1599,15 +1560,15 @@ namespace BesiegeScriptingMod.Util
         {
             if (primitiveExpression.Value == null)
             {
-                this.Append("None");
+                Append("None");
             }
             else if (!(primitiveExpression.Value is bool))
             {
-                this.Append(primitiveExpression.StringValue);
+                Append(primitiveExpression.StringValue);
             }
             else
             {
-                this.Append(primitiveExpression.Value.ToString());
+                Append(primitiveExpression.Value.ToString());
             }
             return null;
         }
@@ -1615,25 +1576,25 @@ namespace BesiegeScriptingMod.Util
         public override object TrackedVisitPropertyDeclaration(PropertyDeclaration propertyDeclaration, object data)
         {
             string name = propertyDeclaration.Name;
-            this.propertyNames.Add(name);
+            propertyNames.Add(name);
             if (propertyDeclaration.HasGetRegion)
             {
-                this.AppendIndentedLine(string.Concat("def get_", name, "(self):"));
-                this.IncreaseIndent();
+                AppendIndentedLine(string.Concat("def get_", name, "(self):"));
+                IncreaseIndent();
                 propertyDeclaration.GetRegion.Block.AcceptVisitor(this, data);
-                this.DecreaseIndent();
-                this.AppendLine();
+                DecreaseIndent();
+                AppendLine();
             }
             if (propertyDeclaration.HasSetRegion)
             {
-                this.AppendIndentedLine(string.Concat("def set_", name, "(self, value):"));
-                this.IncreaseIndent();
+                AppendIndentedLine(string.Concat("def set_", name, "(self, value):"));
+                IncreaseIndent();
                 propertyDeclaration.SetRegion.Block.AcceptVisitor(this, data);
-                this.DecreaseIndent();
-                this.AppendLine();
+                DecreaseIndent();
+                AppendLine();
             }
-            this.AppendPropertyDecorator(propertyDeclaration);
-            this.AppendLine();
+            AppendPropertyDecorator(propertyDeclaration);
+            AppendLine();
             return null;
         }
 
@@ -1765,9 +1726,9 @@ namespace BesiegeScriptingMod.Util
 
         public override object TrackedVisitReturnStatement(ReturnStatement returnStatement, object data)
         {
-            this.AppendIndented("return ");
+            AppendIndented("return ");
             returnStatement.Expression.AcceptVisitor(this, data);
-            this.AppendLine();
+            AppendLine();
             return null;
         }
 
@@ -1797,10 +1758,10 @@ namespace BesiegeScriptingMod.Util
             bool flag = true;
             foreach (SwitchSection switchSection in switchStatement.SwitchSections)
             {
-                this.CreateSwitchCaseCondition(switchStatement.SwitchExpression, switchSection, flag);
-                this.IncreaseIndent();
-                this.CreateSwitchCaseBody(switchSection);
-                this.DecreaseIndent();
+                CreateSwitchCaseCondition(switchStatement.SwitchExpression, switchSection, flag);
+                IncreaseIndent();
+                CreateSwitchCaseBody(switchSection);
+                DecreaseIndent();
                 flag = false;
             }
             return null;
@@ -1813,75 +1774,75 @@ namespace BesiegeScriptingMod.Util
 
         public override object TrackedVisitThisReferenceExpression(ThisReferenceExpression thisReferenceExpression, object data)
         {
-            this.Append("self");
+            Append("self");
             return null;
         }
 
         public override object TrackedVisitThrowStatement(ThrowStatement throwStatement, object data)
         {
-            this.AppendIndented("raise ");
+            AppendIndented("raise ");
             throwStatement.Expression.AcceptVisitor(this, data);
-            this.AppendLine();
+            AppendLine();
             return null;
         }
 
         public override object TrackedVisitTryCatchStatement(TryCatchStatement tryCatchStatement, object data)
         {
-            this.AppendIndentedLine("try:");
-            this.IncreaseIndent();
+            AppendIndentedLine("try:");
+            IncreaseIndent();
             tryCatchStatement.StatementBlock.AcceptVisitor(this, data);
-            this.DecreaseIndent();
+            DecreaseIndent();
             foreach (CatchClause catchClause in tryCatchStatement.CatchClauses)
             {
-                this.AppendIndented("except ");
-                this.Append(catchClause.TypeReference.Type);
-                this.Append(string.Concat(", ", catchClause.VariableName, ":"));
-                this.AppendLine();
-                this.IncreaseIndent();
+                AppendIndented("except ");
+                Append(catchClause.TypeReference.Type);
+                Append(string.Concat(", ", catchClause.VariableName, ":"));
+                AppendLine();
+                IncreaseIndent();
                 catchClause.StatementBlock.AcceptVisitor(this, data);
-                this.DecreaseIndent();
+                DecreaseIndent();
             }
-            this.AppendIndentedLine("finally:");
-            this.IncreaseIndent();
+            AppendIndentedLine("finally:");
+            IncreaseIndent();
             tryCatchStatement.FinallyBlock.AcceptVisitor(this, data);
-            this.DecreaseIndent();
+            DecreaseIndent();
             return null;
         }
 
         public override object TrackedVisitTypeDeclaration(TypeDeclaration typeDeclaration, object data)
         {
-            this.codeBuilder.AppendLineIfPreviousLineIsCode();
-            this.AppendIndented(string.Concat("class ", typeDeclaration.Name));
-            this.AppendBaseTypes(typeDeclaration.BaseTypes);
-            this.AppendLine();
-            this.IncreaseIndent();
-            this.AppendDocstring(this.xmlDocComments);
+            codeBuilder.AppendLineIfPreviousLineIsCode();
+            AppendIndented(string.Concat("class ", typeDeclaration.Name));
+            AppendBaseTypes(typeDeclaration.BaseTypes);
+            AppendLine();
+            IncreaseIndent();
+            AppendDocstring(xmlDocComments);
             if (typeDeclaration.Children.Count <= 0)
             {
-                this.AppendIndentedPassStatement();
+                AppendIndentedPassStatement();
             }
             else
             {
-                this.constructorInfo = PythonConstructorInfo.GetConstructorInfo(typeDeclaration);
-                if (this.constructorInfo != null)
+                constructorInfo = PythonConstructorInfo.GetConstructorInfo(typeDeclaration);
+                if (constructorInfo != null)
                 {
-                    if (this.constructorInfo.Constructor == null)
+                    if (constructorInfo.Constructor == null)
                     {
-                        this.CreateConstructor(this.constructorInfo);
+                        CreateConstructor(constructorInfo);
                     }
                 }
                 typeDeclaration.AcceptChildren(this, data);
             }
-            this.DecreaseIndent();
+            DecreaseIndent();
             return null;
         }
 
         public override object TrackedVisitTypeOfExpression(TypeOfExpression typeOfExpression, object data)
         {
-            this.codeBuilder.InsertIndentedLine("import clr\r\n");
-            this.Append("clr.GetClrType(");
-            this.Append(this.GetTypeName(typeOfExpression.TypeReference));
-            this.Append(")");
+            codeBuilder.InsertIndentedLine("import clr\r\n");
+            Append("clr.GetClrType(");
+            Append(GetTypeName(typeOfExpression.TypeReference));
+            Append(")");
             return null;
         }
 
@@ -1899,7 +1860,7 @@ namespace BesiegeScriptingMod.Util
 
         public override object TrackedVisitTypeReferenceExpression(TypeReferenceExpression typeReferenceExpression, object data)
         {
-            this.Append(this.GetTypeName(typeReferenceExpression.TypeReference));
+            Append(GetTypeName(typeReferenceExpression.TypeReference));
             return null;
         }
 
@@ -1909,42 +1870,42 @@ namespace BesiegeScriptingMod.Util
             switch (unaryOperatorExpression.Op)
             {
                 case UnaryOperatorType.Not:
-                    {
-                        obj = this.CreateUnaryOperatorStatement("not ", unaryOperatorExpression.Expression);
-                        break;
-                    }
+                {
+                    obj = CreateUnaryOperatorStatement("not ", unaryOperatorExpression.Expression);
+                    break;
+                }
                 case UnaryOperatorType.BitNot:
-                    {
-                        obj = this.CreateUnaryOperatorStatement("~", unaryOperatorExpression.Expression);
-                        break;
-                    }
+                {
+                    obj = CreateUnaryOperatorStatement("~", unaryOperatorExpression.Expression);
+                    break;
+                }
                 case UnaryOperatorType.Minus:
-                    {
-                        obj = this.CreateUnaryOperatorStatement(NRefactoryToPythonConverter.GetBinaryOperator(BinaryOperatorType.Subtract), unaryOperatorExpression.Expression);
-                        break;
-                    }
+                {
+                    obj = CreateUnaryOperatorStatement(GetBinaryOperator(BinaryOperatorType.Subtract), unaryOperatorExpression.Expression);
+                    break;
+                }
                 case UnaryOperatorType.Plus:
-                    {
-                        obj = this.CreateUnaryOperatorStatement(NRefactoryToPythonConverter.GetBinaryOperator(BinaryOperatorType.Add), unaryOperatorExpression.Expression);
-                        break;
-                    }
+                {
+                    obj = CreateUnaryOperatorStatement(GetBinaryOperator(BinaryOperatorType.Add), unaryOperatorExpression.Expression);
+                    break;
+                }
                 case UnaryOperatorType.Increment:
                 case UnaryOperatorType.PostIncrement:
-                    {
-                        obj = this.CreateIncrementStatement(unaryOperatorExpression);
-                        break;
-                    }
+                {
+                    obj = CreateIncrementStatement(unaryOperatorExpression);
+                    break;
+                }
                 case UnaryOperatorType.Decrement:
                 case UnaryOperatorType.PostDecrement:
-                    {
-                        obj = this.CreateDecrementStatement(unaryOperatorExpression);
-                        break;
-                    }
+                {
+                    obj = CreateDecrementStatement(unaryOperatorExpression);
+                    break;
+                }
                 default:
-                    {
-                        obj = null;
-                        break;
-                    }
+                {
+                    obj = null;
+                    break;
+                }
             }
             return obj;
         }
@@ -1973,7 +1934,7 @@ namespace BesiegeScriptingMod.Util
         {
             foreach (Using @using in usingDeclaration.Usings)
             {
-                this.AppendIndentedLine(string.Concat("from ", @using.Name, " import *"));
+                AppendIndentedLine(string.Concat("from ", @using.Name, " import *"));
             }
             return null;
         }
@@ -1985,9 +1946,9 @@ namespace BesiegeScriptingMod.Util
 
         public override object TrackedVisitVariableDeclaration(VariableDeclaration variableDeclaration, object data)
         {
-            this.AppendIndented(string.Concat(variableDeclaration.Name, " = "));
+            AppendIndented(string.Concat(variableDeclaration.Name, " = "));
             variableDeclaration.Initializer.AcceptVisitor(this, data);
-            this.AppendLine();
+            AppendLine();
             return null;
         }
 

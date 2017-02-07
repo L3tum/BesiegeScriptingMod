@@ -1,5 +1,9 @@
-using System;
+#region usings
+
 using System.Collections.Generic;
+using KeraLua;
+
+#endregion
 
 /*
  * This file is part of NLua.
@@ -27,56 +31,53 @@ using System.Collections.Generic;
 
 namespace NLua
 {
-	#if USE_KOPILUA
+#if USE_KOPILUA
 	using LuaCore  = KopiLua.Lua;
 	using LuaState = KopiLua.LuaState;
 	#else
-	using LuaCore  = KeraLua.Lua;
-	using LuaState = KeraLua.LuaState;
-	#endif
 
-	internal class ObjectTranslatorPool
-	{
-		private static volatile ObjectTranslatorPool instance = new ObjectTranslatorPool ();		
-		private Dictionary<LuaState, ObjectTranslator> translators = new Dictionary<LuaState, ObjectTranslator>();
-		
-		public static ObjectTranslatorPool Instance
-		{
-			get
-			{
-				return instance;
-			}
-		}
-		
-		public ObjectTranslatorPool ()
-		{
-		}
-		
-		public void Add (LuaState luaState, ObjectTranslator translator)
-		{
-			translators.Add(luaState , translator);			
-		}
-		
-		public ObjectTranslator Find (LuaState luaState)
-		{
-			if (translators.ContainsKey (luaState))
-				return translators [luaState];
+    #region usings
 
-			LuaState main = LuaCore.LuaNetGetMainState (luaState);
+    using LuaCore = KeraLua.Lua;
 
-			if (translators.ContainsKey (main))
-				return translators [main];
-			
-			return null;
-		}
-		
-		public void Remove (LuaState luaState)
-		{
-			if (!translators.ContainsKey (luaState))
-				return;
-			
-			translators.Remove (luaState);
-		}
-	}
+    #endregion
+
+#endif
+
+    internal class ObjectTranslatorPool
+    {
+        private static volatile ObjectTranslatorPool instance = new ObjectTranslatorPool();
+        private readonly Dictionary<LuaState, ObjectTranslator> translators = new Dictionary<LuaState, ObjectTranslator>();
+
+        public static ObjectTranslatorPool Instance
+        {
+            get { return instance; }
+        }
+
+        public void Add(LuaState luaState, ObjectTranslator translator)
+        {
+            translators.Add(luaState, translator);
+        }
+
+        public ObjectTranslator Find(LuaState luaState)
+        {
+            if (translators.ContainsKey(luaState))
+                return translators[luaState];
+
+            LuaState main = LuaCore.LuaNetGetMainState(luaState);
+
+            if (translators.ContainsKey(main))
+                return translators[main];
+
+            return null;
+        }
+
+        public void Remove(LuaState luaState)
+        {
+            if (!translators.ContainsKey(luaState))
+                return;
+
+            translators.Remove(luaState);
+        }
+    }
 }
-

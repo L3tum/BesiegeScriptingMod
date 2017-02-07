@@ -23,39 +23,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
+#region usings
+
 using System;
+using KeraLua;
+
+#endregion
 
 namespace NLua
 {
-	#if USE_KOPILUA
+#if USE_KOPILUA
 	using LuaCore  = KopiLua.Lua;
 	using LuaState = KopiLua.LuaState;
 	#else
-	using LuaCore  = KeraLua.Lua;
-	using LuaState = KeraLua.LuaState;
-	#endif
-	/*
+
+    #region usings
+
+    using LuaCore = KeraLua.Lua;
+
+    #endregion
+
+#endif
+    /*
 	 * Class used for generating delegates that get a function from the Lua
 	 * stack as a delegate of a specific type.
 	 * 
 	 * Author: Fabio Mascarenhas
 	 * Version: 1.0
 	 */
-	class DelegateGenerator
-	{
-		private ObjectTranslator translator;
-		private Type delegateType;
-		
 
-		public DelegateGenerator (ObjectTranslator objectTranslator, Type type)
-		{
-			translator = objectTranslator;
-			delegateType = type;
-		}
+    internal class DelegateGenerator
+    {
+        private readonly Type delegateType;
+        private readonly ObjectTranslator translator;
 
-		public object ExtractGenerated (LuaState luaState, int stackPos)
-		{
-			return CodeGeneration.Instance.GetDelegate (delegateType, translator.GetFunction (luaState, stackPos));
-		}
-	}
+
+        public DelegateGenerator(ObjectTranslator objectTranslator, Type type)
+        {
+            translator = objectTranslator;
+            delegateType = type;
+        }
+
+        public object ExtractGenerated(LuaState luaState, int stackPos)
+        {
+            return CodeGeneration.Instance.GetDelegate(delegateType, translator.GetFunction(luaState, stackPos));
+        }
+    }
 }

@@ -23,38 +23,50 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
+#region usings
+
 using System;
+using KeraLua;
+
+#endregion
 
 namespace NLua
 {
-	#if USE_KOPILUA
+#if USE_KOPILUA
 	using LuaCore  = KopiLua.Lua;
 	using LuaState = KopiLua.LuaState;
 	#else
-	using LuaCore  = KeraLua.Lua;
-	using LuaState = KeraLua.LuaState;
-	#endif
-	/*
+
+    #region usings
+
+    using LuaCore = KeraLua.Lua;
+
+    #endregion
+
+#endif
+    /*
 	 * Class used for generating delegates that get a table from the Lua
 	 * stack as a an object of a specific type.
 	 * 
 	 * Author: Fabio Mascarenhas
 	 * Version: 1.0
 	 */
-	class ClassGenerator
-	{
-		private ObjectTranslator translator;
-		private Type klass;
 
-		public ClassGenerator (ObjectTranslator objTranslator, Type typeClass)
-		{
-			translator = objTranslator;
-			klass = typeClass;
-		}
+    internal class ClassGenerator
+    {
+        private readonly Type klass;
+        private readonly ObjectTranslator translator;
 
-		public object ExtractGenerated (LuaState luaState, int stackPos)
-		{
-			return CodeGeneration.Instance.GetClassInstance (klass, translator.GetTable (luaState, stackPos));
-		}
-	}
+        public ClassGenerator(ObjectTranslator objTranslator, Type typeClass)
+        {
+            translator = objTranslator;
+            klass = typeClass;
+        }
+
+        public object ExtractGenerated(LuaState luaState, int stackPos)
+        {
+            return CodeGeneration.Instance.GetClassInstance(klass, translator.GetTable(luaState, stackPos));
+        }
+    }
 }

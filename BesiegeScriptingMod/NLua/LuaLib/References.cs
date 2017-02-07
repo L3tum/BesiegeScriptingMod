@@ -24,13 +24,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-using System;
 
 namespace NLua
 {
-	public enum References : int
-	{
-		RefNil  = -1,
-		NoRef   = -2
-	}
+    public enum References
+    {
+        RefNil = -1,
+        NoRef = -2
+    }
 }

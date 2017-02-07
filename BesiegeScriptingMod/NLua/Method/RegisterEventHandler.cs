@@ -22,60 +22,69 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
+#region usings
+
 using System;
 using System.Reflection;
 
+#endregion
+
 namespace NLua.Method
 {
-	/*
+    /*
 	 * Wrapper class for events that does registration/deregistration
 	 * of event handlers.
 	 * 
 	 * Author: Fabio Mascarenhas
 	 * Version: 1.0
 	 */
-	class RegisterEventHandler
-	{
-		private EventHandlerContainer pendingEvents;
-		private EventInfo eventInfo;
-		private object target;
 
-		public RegisterEventHandler (EventHandlerContainer pendingEvents, object target, EventInfo eventInfo)
-		{
-			this.target = target;
-			this.eventInfo = eventInfo;
-			this.pendingEvents = pendingEvents;
-		}
+    internal class RegisterEventHandler
+    {
+        private readonly EventInfo eventInfo;
+        private readonly EventHandlerContainer pendingEvents;
+        private readonly object target;
 
-		/*
+        public RegisterEventHandler(EventHandlerContainer pendingEvents, object target, EventInfo eventInfo)
+        {
+            this.target = target;
+            this.eventInfo = eventInfo;
+            this.pendingEvents = pendingEvents;
+        }
+
+        /*
 		 * Adds a new event handler
 		 */
-		public Delegate Add (LuaFunction function)
-		{
-			//CP: Fix by Ben Bryant for event handling with one parameter
-			//link: http://luaforge.net/forum/message.php?msg_id=9266
-			Delegate handlerDelegate = CodeGeneration.Instance.GetDelegate (eventInfo.EventHandlerType, function);
-			eventInfo.AddEventHandler (target, handlerDelegate);
-			pendingEvents.Add (handlerDelegate, this);
 
-			return handlerDelegate;
-		}
+        public Delegate Add(LuaFunction function)
+        {
+            //CP: Fix by Ben Bryant for event handling with one parameter
+            //link: http://luaforge.net/forum/message.php?msg_id=9266
+            Delegate handlerDelegate = CodeGeneration.Instance.GetDelegate(eventInfo.EventHandlerType, function);
+            eventInfo.AddEventHandler(target, handlerDelegate);
+            pendingEvents.Add(handlerDelegate, this);
 
-		/*
+            return handlerDelegate;
+        }
+
+        /*
 		 * Removes an existing event handler
 		 */
-		public void Remove (Delegate handlerDelegate)
-		{
-			RemovePending (handlerDelegate);
-			pendingEvents.Remove (handlerDelegate);
-		}
 
-		/*
+        public void Remove(Delegate handlerDelegate)
+        {
+            RemovePending(handlerDelegate);
+            pendingEvents.Remove(handlerDelegate);
+        }
+
+        /*
 		 * Removes an existing event handler (without updating the pending handlers list)
 		 */
-		internal void RemovePending (Delegate handlerDelegate)
-		{
-			eventInfo.RemoveEventHandler (target, handlerDelegate);
-		}
-	}
+
+        internal void RemovePending(Delegate handlerDelegate)
+        {
+            eventInfo.RemoveEventHandler(target, handlerDelegate);
+        }
+    }
 }

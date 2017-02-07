@@ -22,39 +22,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
+#region usings
+
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
+
+#endregion
 
 namespace NLua.Method
 {
-	/// <summary>
-	/// We keep track of what delegates we have auto attached to an event - to allow us to cleanly exit a NLua session
-	/// </summary>
-	class EventHandlerContainer : IDisposable
-	{
-		private Dictionary<Delegate, RegisterEventHandler> dict = new Dictionary<Delegate, RegisterEventHandler> ();
+    /// <summary>
+    /// We keep track of what delegates we have auto attached to an event - to allow us to cleanly exit a NLua session
+    /// </summary>
+    internal class EventHandlerContainer : IDisposable
+    {
+        private readonly Dictionary<Delegate, RegisterEventHandler> dict = new Dictionary<Delegate, RegisterEventHandler>();
 
-		public void Add (Delegate handler, RegisterEventHandler eventInfo)
-		{
-			dict.Add (handler, eventInfo);
-		}
+        /// <summary>
+        /// Remove any still registered handlers
+        /// </summary>
+        public void Dispose()
+        {
+            foreach (KeyValuePair<Delegate, RegisterEventHandler> pair in dict)
+                pair.Value.RemovePending(pair.Key);
 
-		public void Remove (Delegate handler)
-		{
-			bool found = dict.Remove (handler);
-			Debug.Assert (found);
-		}
+            dict.Clear();
+        }
 
-		/// <summary>
-		/// Remove any still registered handlers
-		/// </summary>
-		public void Dispose ()
-		{
-			foreach (KeyValuePair<Delegate, RegisterEventHandler> pair in dict)
-				pair.Value.RemovePending (pair.Key);
+        public void Add(Delegate handler, RegisterEventHandler eventInfo)
+        {
+            dict.Add(handler, eventInfo);
+        }
 
-			dict.Clear ();
-		}
-	}
+        public void Remove(Delegate handler)
+        {
+            bool found = dict.Remove(handler);
+            Debug.Assert(found);
+        }
+    }
 }
